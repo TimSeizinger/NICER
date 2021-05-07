@@ -21,6 +21,8 @@ running = True
 
 class NicerGui:
     def __init__(self, master, screen_size):
+        self.interactive_sliders = False
+
         if screen_size[0] > 1920:
             screen_size = list(screen_size)  # when multiscreen, use only 1 screen
             screen_size[0] = 1920
@@ -32,11 +34,14 @@ class NicerGui:
         master.geometry(str(self.width) + 'x' + str(self.height))  # let gui be x% of screen, centered
         sliderlength = 200
 
+        ## Load pretrained models/can8_epoch10_final.pt and models/nima_vgg_bright2.pkl into NICER framework
         self.nicer = NICER(checkpoint_can=config.can_checkpoint_path, checkpoint_nima=config.nima_checkpoint_path,
                            can_arch=config.can_filter_count)
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.can = CAN(no_of_filters=8) if config.can_filter_count == 8 else CAN(no_of_filters=7)
+
+        ## Load seperate pretrained CAN to GUI in eval mode for image previewing
         self.can.load_state_dict(torch.load(config.can_checkpoint_path, map_location=self.device)['state_dict'])
         self.can.eval()
         self.can.to(self.device)
@@ -76,49 +81,49 @@ class NicerGui:
             self.saturation = DoubleVar()
             self.saturation_isfixed = IntVar()
             self.saturation_slider = Scale(master, from_=-100, to=100, length=sliderlength, orient=HORIZONTAL,
-                                           var=self.saturation)
+                                                var=self.saturation, command=self.checkSliders)
             self.saturation_checkbox = Checkbutton(master, var=self.saturation_isfixed)
 
             self.contrast = DoubleVar()
             self.contrast_isfixed = IntVar()
             self.contrast_slider = Scale(master, from_=-100, to=100, length=sliderlength, orient=HORIZONTAL,
-                                         var=self.contrast)
+                                         var=self.contrast, command=self.checkSliders)
             self.contrast_checkbox = Checkbutton(master, var=self.contrast_isfixed)
 
             self.brightness = DoubleVar()
             self.brightess_isfixed = IntVar()
             self.brightness_slider = Scale(master, from_=-100, to=100, length=sliderlength, orient=HORIZONTAL,
-                                           var=self.brightness)
+                                           var=self.brightness, command=self.checkSliders)
             self.brigtness_checkbox = Checkbutton(master, var=self.brightess_isfixed)
 
             self.shadows = DoubleVar()
             self.shadows_isfixed = IntVar()
             self.shadows_slider = Scale(master, from_=-100, to=100, length=sliderlength, orient=HORIZONTAL,
-                                        var=self.shadows)
+                                        var=self.shadows, command=self.checkSliders)
             self.shadows_checkbox = Checkbutton(master, var=self.shadows_isfixed)
 
             self.highlights = DoubleVar()
             self.highlighs_isfixed = IntVar()
             self.highlights_slider = Scale(master, from_=-100, to=100, length=sliderlength, orient=HORIZONTAL,
-                                           var=self.highlights)
+                                           var=self.highlights, command=self.checkSliders)
             self.highlights_checkbox = Checkbutton(master, var=self.highlighs_isfixed)
 
             self.exposure = DoubleVar()
             self.exposure_isfixed = IntVar()
             self.exposure_slider = Scale(master, from_=-100, to=100, length=sliderlength, orient=HORIZONTAL,
-                                         var=self.exposure)
+                                         var=self.exposure, command=self.checkSliders)
             self.exposure_checkbox = Checkbutton(master, var=self.exposure_isfixed)
 
             self.locallaplacian = DoubleVar()
             self.locallaplacian_isfixed = IntVar()
             self.locallaplacian_slider = Scale(master, from_=-100, to=100, length=sliderlength, orient=HORIZONTAL,
-                                               var=self.locallaplacian)
+                                               var=self.locallaplacian, command=self.checkSliders)
             self.locallaplacian_checkbox = Checkbutton(master, var=self.locallaplacian_isfixed)
 
             self.nonlocaldehazing = DoubleVar()
             self.nonlocaldehazing_isfixed = IntVar()
             self.nonlocaldehazing_slider = Scale(master, from_=-100, to=100, length=sliderlength, orient=HORIZONTAL,
-                                                 var=self.nonlocaldehazing)
+                                                 var=self.nonlocaldehazing, command=self.checkSliders)
             self.nonlocaldehazing_checkbox = Checkbutton(master, var=self.nonlocaldehazing_isfixed)
 
             self.gamma = DoubleVar()
@@ -197,6 +202,13 @@ class NicerGui:
             self.epochBox.insert(-1, '50')
             self.epochBox.place(x=40 + 160, y=button_y - 5)
 
+        # check if interactive sliders are on in Config
+        if True:
+            self.interactive_sliders = config.interactive_preview_sliders
+            self.slider_input_flag = False
+            self.slider_adj_by_NICER = False
+            self.old_slider_vals = self.get_all_photo_slider_values()
+
     def about(self):
         url = 'https://github.com/mr-Mojo/NICER'
         webbrowser.open(url, new=1)
@@ -213,7 +225,7 @@ class NicerGui:
 
         filepath = filedialog.askopenfilename(initialdir=os.getcwd(), title="Select an image to open",
                                               filetypes=(
-                                                  ("jpg files", "*.jpg"), ("png files", "*.png"), ("all files", "*.*")))
+                                                  ("jpg files", "*.jpg"), ("png files", "*.png"), ("dng files", "*.dng"), ("all files", "*.*")))
         if filepath is None: return
 
         if filepath.split('.')[-1] in config.supported_extensions:
@@ -388,6 +400,9 @@ class NicerGui:
             self.print_label['text'] = 'Could not save image. See console output.'
 
     def reset_all(self):
+        self.slider_adj_by_NICER = True
+        self.interactive_sliders = False
+
         """ reset GUI and slider values """
         for slider in self.sliders:
             slider.set(0)
@@ -405,6 +420,12 @@ class NicerGui:
 
         # self.tk_img_panel_one.place_forget()       # leave the current image, reset only filters and edited img
         self.tk_img_panel_two.place_forget()
+
+        self.old_slider_vals = self.get_all_photo_slider_values()
+        print("Slider reset")
+        self.preview()
+        self.slider_adj_by_NICER = False
+        self.interactive_sliders = config.interactive_preview_sliders
 
     def preview(self, filterList=None):
         """ apply the currently set slider combination onto the image (using resized img for increased speed) """
@@ -428,9 +449,13 @@ class NicerGui:
         self.tk_img_panel_two.configure(image=tk_preview)
 
     def get_all_slider_values(self):
-        values = [var.get() / 100.0 for var in self.slider_variables]
+        values = self.get_all_photo_slider_values()
         print_msg("Sliders values: {} -- Gamma: {}".format(values, self.gamma.get()), 3)
         return values, self.gamma.get()
+
+    def get_all_photo_slider_values(self):
+        values = [var.get() / 100.0 for var in self.slider_variables]
+        return values
 
     def get_all_checkbox_values(self):
         values = [var.get() for var in self.checkbox_variables]
@@ -444,6 +469,8 @@ class NicerGui:
         return values
 
     def set_all_image_filter_sliders(self, valueList):
+        self.slider_adj_by_NICER = True
+
         # does not set gamma. called by nicer_enhance routine to display final outcome of enhancement
         for i in range(5):
             self.sliders[i].set(valueList[i])
@@ -488,6 +515,8 @@ class NicerGui:
                     self.reference_img2 = Image.fromarray(preview_image)
                     self.display_img_two()
 
+                self.slider_adj_by_NICER = False
+
             except queue.Queue.Empty:
                 pass
 
@@ -499,6 +528,8 @@ class NicerGui:
             self.print_label['text'] = "Optimization finished."
             self.nicer_button.config(state="active")
             self.nicer.queue = queue.Queue()
+            self.interactive_sliders = config.interactive_preview_sliders
+            print("Interactive Sliders: " + str(self.interactive_sliders))
         else:
             self.threadKiller.set()  # thread killed by stop button
             self.thread.join()
@@ -506,6 +537,8 @@ class NicerGui:
             self.nicer_button.config(state="active")
             self.threadKiller.clear()
             self.nicer.queue = queue.Queue()
+            self.interactive_sliders = config.interactive_preview_sliders
+            print("Interactive Sliders: " + str(self.interactive_sliders))
 
     def nicer_routine(self):
         global running
@@ -518,6 +551,8 @@ class NicerGui:
 
         # check if image is yet available, else do nothing
         if self.tk_img_panel_one.winfo_ismapped():
+            self.interactive_sliders = False
+            print("Interactive Sliders: " + str(self.interactive_sliders))
 
             self.nicer.re_init()  # reset everything, especially optimizers, for a fresh optimization
 
@@ -551,6 +586,7 @@ class NicerGui:
 
         else:
             self.print_label['text'] = "Load image first."
+            self.nicer_button.config(state="active")
 
     def alternate_can(self, image, filterList):
         # alternate CAN for previewing the images, as NICER's CAN is used for gradient computation
@@ -561,13 +597,19 @@ class NicerGui:
         image = Image.fromarray(bright_norm_img)
         image_tensor = transforms.ToTensor()(image)
 
+        ##TODO What's going on here exactly: image tensor is getting combined with the filter tensor?
+        ##                   8 Filters, X resolution         ,Y resolution; all initializen with 0
         filter_tensor = torch.zeros((8, image_tensor.shape[1], image_tensor.shape[2]),
                                     dtype=torch.float32).to(self.device)  # tensorshape [c,w,h]
+        ##Assign the values of the filters to each channel on the entire map uniformly.
         for l in range(8):
             filter_tensor[l, :, :] = filterList[l]  # construct uniform filtermap
+        ##
         mapped_img = torch.cat((image_tensor.cpu(), filter_tensor.cpu()), dim=0).unsqueeze(dim=0).to(self.device)
 
+        ##Self.can(mapped_img) is executing self.can.forward(mapped_img) + registered hooks!
         enhanced_img = self.can(mapped_img)  # enhance img with CAN
+        ##Returns the processed image
         enhanced_img = enhanced_img.cpu()
         enhanced_img = enhanced_img.detach().permute(2, 3, 1, 0).squeeze().numpy()
 
@@ -576,3 +618,16 @@ class NicerGui:
 
         # returns a np.array of type np.uint8
         return enhanced_clipped
+
+    def checkSliders(self, val):
+        if self.old_slider_vals == self.get_all_photo_slider_values(): return
+
+        if self.interactive_sliders and self.tk_img_panel_one.winfo_ismapped():
+            self.old_slider_vals = self.get_all_photo_slider_values()
+            self.preview()
+        ##Put new filter values for next NICER iteration int the input queue
+        elif config.interactive_training_sliders and self.tk_img_panel_one.winfo_ismapped() and not self.slider_adj_by_NICER:
+            self.old_slider_vals = self.get_all_photo_slider_values()
+            self.nicer.in_queue.put(self.get_all_photo_slider_values())
+
+

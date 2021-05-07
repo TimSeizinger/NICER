@@ -13,6 +13,8 @@ from autobright import normalize_brightness
 from neural_models import error_callback, CAN, NIMA_VGG
 from utils import nima_transform, print_msg, loss_with_l2_regularization
 
+from IA.IA import IA as IA
+
 
 class NICER(nn.Module):
 
@@ -29,19 +31,31 @@ class NICER(nn.Module):
         can.eval()
         can.to(self.device)
 
+        judge = IA("one", False, False, None, None, pretrained=True)
+        judge.eval()
+        judge.to(self.device)
+
+
         nima = NIMA_VGG(models.vgg16(pretrained=True))
         nima.load_state_dict(torch.load(checkpoint_nima, map_location=self.device))
         nima.eval()
         nima.to(self.device)
 
+
         torch.autograd.set_detect_anomaly(True)
+
+        ## queue for outputs to GUI
         self.queue = queue.Queue()
+
+        ##queue for interactive slider inputs from GUI
+        self.in_queue = queue.Queue()
 
         # self.filters is a leaf-variable, bc it's created directly and not as part of an operation
         self.filters = torch.tensor([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], dtype=torch.float32, requires_grad=True,
                                     device=self.device)
         self.can = can
         self.nima = nima
+        self.judge = judge
 
         self.gamma = config.gamma
 
@@ -52,7 +66,7 @@ class NICER(nn.Module):
         else:
             error_callback('optimizer')
 
-    def forward(self, image, fixedFilters=None):
+    def forward(self, image, fixedFilters=None, new=False):
         filter_tensor = torch.zeros((8, 224, 224), dtype=torch.float32).to(self.device)
 
         # construct filtermap uniformly from given filters
@@ -68,7 +82,10 @@ class NICER(nn.Module):
         mapped_img = torch.cat((image, filter_tensor.cpu()), dim=0).unsqueeze(dim=0).to(
             self.device)  # concat filters and img
         enhanced_img = self.can(mapped_img)  # enhance img with CAN
-        distr_of_ratings = self.nima(enhanced_img)  # get nima score distribution -> tensor
+        if new:
+            distr_of_ratings = self.judge(enhanced_img)  # get nima score distribution -> tensor
+        else:
+            distr_of_ratings = self.nima(enhanced_img)  # get nima score distribution -> tensor
 
         self.queue.put('dummy')  # dummy
 
@@ -194,8 +211,13 @@ class NICER(nn.Module):
         for i in range(epochs):
             if thread_stopEvent.is_set(): break
 
+            ## Check if sliders have been manually adjusted during last iteration, if yes apply adjustments
+            while not self.in_queue.empty():
+                self.set_filters(self.in_queue.get())
+
             print_msg("Iteration {} of {}".format(i, epochs), 2)
 
+            '''
             if fixFilters:
                 distribution, enhanced_img = self.forward(image_tensor_transformed, fixedFilters=initial_filter_values)
             else:
@@ -209,7 +231,12 @@ class NICER(nn.Module):
             else:
                 loss = loss_with_l2_regularization(distribution.cpu(), self.filters.cpu(),
                                                    initial_filters=user_preset_filters, gamma=self.gamma)
+                '''
 
+            loss, enhanced_img = self.forward(image_tensor_transformed, new=True)
+
+            loss = torch.tensor(1) - loss
+            print("Loss: "+ str(loss.item()))
             loss.backward()
             self.optimizer.step()
 

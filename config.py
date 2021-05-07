@@ -2,6 +2,8 @@
 
 verbosity = 2                                      # set from 0 (silent) to 3 (most verbose)
 preview = True                                     # toggle to true to show preview imgs -> slower
+interactive_preview_sliders = True                 # toggle to activate interactive sliders for preview when not training -> slower
+interactive_training_sliders = True                # toggle to activate interactive sliders during training -> slower
 
 gamma = 0.1
 epochs = 50

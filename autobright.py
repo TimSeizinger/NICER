@@ -144,7 +144,7 @@ def normalize_brightness(img_path, input_is_PIL=False, verbose=False):
     # best brightness is 128, allow margin of +-30
 
     # image too dark
-    if brightness < 90 or (95 > brightness > 85):
+    if brightness < 5:
 
         # image too dark, with lots of blacks: use ScaleAbs, bc HSV shift produces artifacts
         if brightness < 33:
@@ -179,7 +179,7 @@ def normalize_brightness(img_path, input_is_PIL=False, verbose=False):
             print_msg("ABN - corrected a (little too) dark image with ScaleAbs", 2)
 
     # image too bright
-    elif brightness > 150:
+    elif brightness > 500:
 
         # image is too bright, but does not have many whites
         if not check_if_is_white_image(img):
