@@ -13,7 +13,7 @@ from autobright import normalize_brightness
 from neural_models import error_callback, CAN, NIMA_VGG
 from utils import nima_transform, print_msg, loss_with_l2_regularization
 
-from IA.IA import IA as IA
+from IA_folder.IA import IA as IA
 
 
 class NICER(nn.Module):
@@ -32,6 +32,25 @@ class NICER(nn.Module):
         can.to(self.device)
 
         judge = IA("one", False, False, None, None, pretrained=True)
+
+        state = torch.load(config.IA_checkpoint_path)
+
+        '''
+        state['score.0.weight'] = state['classifier.1.weight']
+        del state['classifier.1.weight']
+        state['score.0.bias'] = state['classifier.1.bias']
+        del state['classifier.1.bias']
+        
+        
+        del state['styles_change_strength.1.weight']
+        del state['styles_change_strength.1.bias']
+        del state['technical_change_strength.1.weight']
+        del state['technical_change_strength.1.bias']
+        del state['composition_change_strength.1.weight']
+        del state['composition_change_strength.1.bias']
+        '''
+
+        judge.load_state_dict(state)
         judge.eval()
         judge.to(self.device)
 
@@ -56,6 +75,7 @@ class NICER(nn.Module):
         self.can = can
         self.nima = nima
         self.judge = judge
+        self.loss_func = nn.MSELoss().to(self.device)
 
         self.gamma = config.gamma
 
@@ -233,10 +253,30 @@ class NICER(nn.Module):
                                                    initial_filters=user_preset_filters, gamma=self.gamma)
                 '''
 
+            '''
             loss, enhanced_img = self.forward(image_tensor_transformed, new=True)
 
-            loss = torch.tensor(1) - loss
-            print("Loss: "+ str(loss.item()))
+
+            loss = torch.tensor(1).to(self.device) - loss
+            
+            '''
+            score_dict, enhanced_img = self.forward(image_tensor_transformed, new=True)
+
+            #print("Loss before MSE: ")
+            #print(nonmseloss)
+
+            #Direct
+            #loss = nonmseloss['score']
+
+            #Invert
+            #loss = torch.tensor(1.0) - score_dict['score']
+
+            #MSE loss
+            loss = self.loss_func(score_dict['score'], torch.tensor([[1.0]]).to(self.device))
+
+
+            #print("Loss after MSE: ")
+            print(loss.item())
             loss.backward()
             self.optimizer.step()
 
@@ -276,6 +316,7 @@ class NICER(nn.Module):
             enhanced_clipped = enhanced_clipped.astype('uint8')
 
             self.queue.put(enhanced_clipped)
+            self.in_queue = queue.Queue()
 
             # returns an 8bit image in any case ---
             return enhanced_clipped, None, None

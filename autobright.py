@@ -140,7 +140,7 @@ def normalize_brightness(img_path, input_is_PIL=False, verbose=False):
 
     bright_img = None
 
-    print_msg("ABN - PIL brightness: {}".format(brightness), 2)
+    #print_msg("ABN - PIL brightness: {}".format(brightness), 2)
     # best brightness is 128, allow margin of +-30
 
     # image too dark
@@ -149,14 +149,14 @@ def normalize_brightness(img_path, input_is_PIL=False, verbose=False):
         # image too dark, with lots of blacks: use ScaleAbs, bc HSV shift produces artifacts
         if brightness < 33:
             bright_img = cv2.convertScaleAbs(img, alpha=1.1, beta=0)
-            print_msg("ABN - converted a very dark image with ScaleAbs", 2)
+            #print_msg("ABN - converted a very dark image with ScaleAbs", 2)
 
         # image too dark, but not as much black: use HSV shift
         elif brightness < 70:
 
             if check_if_is_black_image(img):
                 bright_img = cv2.convertScaleAbs(img, alpha=1.1, beta=0)
-                print_msg("ABN - converted a dark image with ScaleAbs", 2)
+                #print_msg("ABN - converted a dark image with ScaleAbs", 2)
             else:
 
                 shift = 20
@@ -164,26 +164,26 @@ def normalize_brightness(img_path, input_is_PIL=False, verbose=False):
                 psnr = get_psnr(img, bright_img)
 
                 while psnr < 30.0:  # 30 bc then images look "nice" enough -- hard coded
-                    print_msg("ABN - hsv stretch psnr is {} with shift of {}".format(psnr, shift), 3)
+                    #print_msg("ABN - hsv stretch psnr is {} with shift of {}".format(psnr, shift), 3)
                     shift -= 2
                     bright_img = rescale_hsv(img, value=shift)
                     psnr = get_psnr(img, bright_img)
                     if shift < 1.0: break
 
-                print_msg("ABN - corrected a dark image with HSV shift", 2)
+                #print_msg("ABN - corrected a dark image with HSV shift", 2)
 
         # brightness between 70 and 95 -> just a little dark, apply slight scaleAbs
         else:
             num = 1.3
             bright_img = cv2.convertScaleAbs(img, alpha=num, beta=0)
-            print_msg("ABN - corrected a (little too) dark image with ScaleAbs", 2)
+            #print_msg("ABN - corrected a (little too) dark image with ScaleAbs", 2)
 
     # image too bright
     elif brightness > 500:
 
         # image is too bright, but does not have many whites
         if not check_if_is_white_image(img):
-            print_msg("ABN - Auto stretch a bright image", 2)
+            #print_msg("ABN - Auto stretch a bright image", 2)
             clipping = 5.0
             bright_img, alpha, beta = auto_bright(img, plot=False, clip_hist_percent=clipping)
 
@@ -194,7 +194,7 @@ def normalize_brightness(img_path, input_is_PIL=False, verbose=False):
             if ssim < 0.80:  # not good enough, clip harder
                 clipping = 1.0
                 while ssim < 0.80:
-                    print_msg("ABN - auto-bright now with clip of {} bc ssim is {}".format(clipping, ssim), 3)
+                    #print_msg("ABN - auto-bright now with clip of {} bc ssim is {}".format(clipping, ssim), 3)
                     bright_img_resized, _, _ = auto_bright(orig_img_resized, clip_hist_percent=clipping)
                     ssim = get_ssim(orig_img_resized, bright_img_resized)
                     clipping /= 10.0
@@ -205,12 +205,12 @@ def normalize_brightness(img_path, input_is_PIL=False, verbose=False):
             bright_img, _, _ = auto_bright(img, plot=False, clip_hist_percent=clipping)
 
         # image too bright, but contains lots of white -> probably should be bright, do nothing
-        else:
-            print_msg("ABN - do nothing - bright white image, kept it bright", 2)
+        #else:
+            #print_msg("ABN - do nothing - bright white image, kept it bright", 2)
 
     # image brightness in range 95 < brightness < 150: brightness is okay!
-    else:
-        print_msg("ABN - no ABN enhancement - image brightness is good.", 2)
+    #else:
+        #print_msg("ABN - no ABN enhancement - image brightness is good.", 2)
 
     if bright_img is None:
         if input_is_PIL == False:
@@ -252,7 +252,7 @@ def correct_image_folder(path, save_corrected=True, verbose=False, resize=False,
     for idx, img_name in enumerate(sorted(os.listdir(path))):
         if not img_name.endswith(extension): continue
 
-        print("Normalizing img {} of {}".format(idx, len(os.listdir(path))))
+        #print("Normalizing img {} of {}".format(idx, len(os.listdir(path))))
 
         # currently unavailable
         # if resize:
@@ -269,8 +269,8 @@ def correct_image_folder(path, save_corrected=True, verbose=False, resize=False,
         # brightness correction finished.
         # display and print results of correction:
 
-        if bright_img is not None and verbose:
-            print("PIL brightness (new): \t\t", get_brightness(Image.fromarray(bright_img), read=False))
+        #if bright_img is not None and verbose:
+            #print("PIL brightness (new): \t\t", get_brightness(Image.fromarray(bright_img), read=False))
 
         if bright_img is not None and show_output:
             cv2.imshow("brightened", bright_img)
@@ -286,4 +286,4 @@ def correct_image_folder(path, save_corrected=True, verbose=False, resize=False,
             bright_img = cv2.cvtColor(bright_img, cv2.COLOR_RGB2BGR)
             cv2.imwrite(os.path.join(dest, img_name), bright_img)
 
-    print("Done.")
+    #print("Done.")

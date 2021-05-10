@@ -421,6 +421,8 @@ class NicerGui:
         # self.tk_img_panel_one.place_forget()       # leave the current image, reset only filters and edited img
         self.tk_img_panel_two.place_forget()
 
+        self.nicer.in_queue = queue.Queue()
+
         self.old_slider_vals = self.get_all_photo_slider_values()
         print("Slider reset")
         self.preview()
