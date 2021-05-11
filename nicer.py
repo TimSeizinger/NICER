@@ -81,7 +81,7 @@ class NICER(nn.Module):
         self.can = can
         self.nima = nima
         self.judge = judge
-        self.loss_func = nn.MSELoss('sum').to(self.device)
+        self.loss_func = nn.MSELoss('mean').to(self.device)
 
         self.gamma = config.gamma
 
@@ -267,7 +267,6 @@ class NICER(nn.Module):
             
             '''
             score, enhanced_img = self.forward(image_tensor_transformed, new=True)
-            score = torch.mean(score)
 
             #print("Loss before MSE: ")
             #print(nonmseloss)
@@ -279,7 +278,7 @@ class NICER(nn.Module):
             #loss = torch.tensor(1.0) - score_dict['score']
 
             #MSE loss
-            loss = self.loss_func(score, torch.tensor([[1.0]]).to(self.device))
+            loss = self.loss_func(torch.mean(score), torch.tensor(10.0).to(self.device))
 
             #L2 Loss from NICER, doesn't work here as is
             '''
