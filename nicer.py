@@ -11,7 +11,7 @@ from torchvision.transforms import transforms
 import config
 from autobright import normalize_brightness
 from neural_models import error_callback, CAN, NIMA_VGG
-from utils import nima_transform, print_msg, loss_with_l2_regularization
+from utils import nima_transform, print_msg, loss_with_l2_regularization, weighted_mean
 
 from IA_folder.old.utils import mapping
 from IA_folder.IA import IA
@@ -82,6 +82,8 @@ class NICER(nn.Module):
         self.nima = nima
         self.judge = judge
         self.loss_func = nn.MSELoss('mean').to(self.device)
+        self.weights = torch.tensor([[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]]).to(self.device)
+        self.target = torch.tensor(10.0).to(self.device)
 
         self.gamma = config.gamma
 
@@ -268,6 +270,7 @@ class NICER(nn.Module):
             '''
             score, enhanced_img = self.forward(image_tensor_transformed, new=True)
 
+            print('Score = ' + str(weighted_mean(score, self.weights).item()))
             #print("Loss before MSE: ")
             #print(nonmseloss)
 
@@ -277,8 +280,17 @@ class NICER(nn.Module):
             #Invert
             #loss = torch.tensor(1.0) - score_dict['score']
 
-            #MSE loss
-            loss = self.loss_func(torch.mean(score), torch.tensor(10.0).to(self.device))
+            #dumb mean MSE loss
+            #loss = self.loss_func(torch.mean(score), torch.tensor(10.0).to(self.device))
+
+            # weighted mean MSE loss, probably too high?
+            # loss = self.loss_func(weighted_mean(score, self.weights), torch.tensor(10.0).to(self.device))
+
+            #weighted mean MSE loss, notmalized between 0 and 1
+            loss = torch.div(self.loss_func(weighted_mean(score, self.weights), self.target), torch.tensor(100).to(self.device))
+
+            # weighted mean loss
+            #loss = torch.div(self.target - weighted_mean(score, self.weights), self.target)
 
             #L2 Loss from NICER, doesn't work here as is
             '''
@@ -291,7 +303,7 @@ class NICER(nn.Module):
             '''
 
             #print("Loss after MSE: ")
-            print(loss.item())
+            print('Loss = ' + str(loss.item()))
             loss.backward()
             self.optimizer.step()
 

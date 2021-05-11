@@ -143,3 +143,6 @@ def loss_with_l2_regularization(nima_result, filters, gamma=config.gamma, initia
         l2_term = sum([fil ** 2 for fil in filters])  # l2: sum the squares of all filters
 
     return distance_term + gamma * l2_term
+
+def weighted_mean(input, weight):
+    return torch.sum(weight * input)
