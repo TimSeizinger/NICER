@@ -13,7 +13,9 @@ from autobright import normalize_brightness
 from neural_models import error_callback, CAN, NIMA_VGG
 from utils import nima_transform, print_msg, loss_with_l2_regularization
 
-from IA_folder.IA import IA as IA
+from IA_folder.old.utils import mapping
+from IA_folder.IA import IA
+from IA2NIMA.NIMA import NIMA
 
 
 class NICER(nn.Module):
@@ -31,9 +33,13 @@ class NICER(nn.Module):
         can.eval()
         can.to(self.device)
 
-        judge = IA("one", False, False, None, None, pretrained=True)
+        #IA Judge
+        #judge = IA("scores-one, change_regress", True, False, mapping, None, pretrained=True)
 
-        state = torch.load(config.IA_checkpoint_path)
+        #IA2Nima Judge
+        judge = NIMA("scores-one, change_regress")
+
+        state = torch.load(config.IA_checkpoint_path)['model_state']
 
         '''
         state['score.0.weight'] = state['classifier.1.weight']
@@ -75,7 +81,7 @@ class NICER(nn.Module):
         self.can = can
         self.nima = nima
         self.judge = judge
-        self.loss_func = nn.MSELoss().to(self.device)
+        self.loss_func = nn.MSELoss('sum').to(self.device)
 
         self.gamma = config.gamma
 
@@ -260,7 +266,8 @@ class NICER(nn.Module):
             loss = torch.tensor(1).to(self.device) - loss
             
             '''
-            score_dict, enhanced_img = self.forward(image_tensor_transformed, new=True)
+            score, enhanced_img = self.forward(image_tensor_transformed, new=True)
+            score = torch.mean(score)
 
             #print("Loss before MSE: ")
             #print(nonmseloss)
@@ -272,8 +279,17 @@ class NICER(nn.Module):
             #loss = torch.tensor(1.0) - score_dict['score']
 
             #MSE loss
-            loss = self.loss_func(score_dict['score'], torch.tensor([[1.0]]).to(self.device))
+            loss = self.loss_func(score, torch.tensor([[1.0]]).to(self.device))
 
+            #L2 Loss from NICER, doesn't work here as is
+            '''
+            if re_init:
+                # new for each image
+                loss = loss_with_l2_regularization(score.cpu(), self.filters.cpu(), gamma=self.gamma)
+            else:
+                loss = loss_with_l2_regularization(score.cpu(), self.filters.cpu(),
+                                                   initial_filters=user_preset_filters, gamma=self.gamma)
+            '''
 
             #print("Loss after MSE: ")
             print(loss.item())

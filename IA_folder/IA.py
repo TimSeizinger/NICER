@@ -50,7 +50,7 @@ class IA(nn.Module):
         self.features = CheckpointModule(module=base_model.features, num_segments=len(base_model.features))
 
         # a single score giving the aesthetics
-        if self.scores == "one":
+        if self.scores == "scores-one, change_regress":
             # fmt: off
             self.score = nn.Sequential(
                 nn.Dropout(0.2),
@@ -122,7 +122,7 @@ class IA(nn.Module):
 
         result_dict = dict()
 
-        if self.scores == "one":
+        if self.scores == "scores-one, change_regress":
             result_dict["score"] = self.score(x)
 
         elif self.scores == "three":
