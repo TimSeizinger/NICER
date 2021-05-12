@@ -12,6 +12,7 @@ import config
 from autobright import normalize_brightness
 from neural_models import error_callback, CAN, NIMA_VGG
 from utils import nima_transform, print_msg, loss_with_l2_regularization, weighted_mean
+import matplotlib.pyplot as plt
 
 from IA_folder.old.utils import mapping
 from IA_folder.IA import IA
@@ -35,10 +36,10 @@ class NICER(nn.Module):
 
         #IA Judge
         #judge = IA("scores-one, change_regress", True, False, mapping, None, pretrained=True)
+        #state = torch.load(config.IA_checkpoint_path)
 
         #IA2Nima Judge
         judge = NIMA("scores-one, change_regress")
-
         state = torch.load(config.IA_checkpoint_path)['model_state']
 
         '''
@@ -83,7 +84,8 @@ class NICER(nn.Module):
         self.judge = judge
         self.loss_func = nn.MSELoss('mean').to(self.device)
         self.weights = torch.tensor([[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]]).to(self.device)
-        self.target = torch.tensor(10.0).to(self.device)
+        self.target = torch.tensor(1.0).to(self.device)
+        self.length = torch.tensor(10.0).to(self.device)
 
         self.gamma = config.gamma
 
@@ -110,14 +112,14 @@ class NICER(nn.Module):
         mapped_img = torch.cat((image, filter_tensor.cpu()), dim=0).unsqueeze(dim=0).to(
             self.device)  # concat filters and img
         enhanced_img = self.can(mapped_img)  # enhance img with CAN
-        if new:
-            distr_of_ratings = self.judge(enhanced_img)  # get nima score distribution -> tensor
-        else:
-            distr_of_ratings = self.nima(enhanced_img)  # get nima score distribution -> tensor
+
+        judge_distr_of_ratings = self.judge(enhanced_img)  # get judge score distribution -> tensor
+
+        nima_distr_of_ratings = self.nima(enhanced_img)  # get nima score distribution -> tensor
 
         self.queue.put('dummy')  # dummy
 
-        return distr_of_ratings, enhanced_img
+        return judge_distr_of_ratings, enhanced_img, nima_distr_of_ratings
 
     def set_filters(self, filter_list):
         # usually called from GUI
@@ -208,6 +210,10 @@ class NICER(nn.Module):
             Returns a re-sized 8bit image as np.array
         """
 
+        judge_scores = []
+        nima_scores = []
+        losses = []
+
         if re_init:
             self.re_init()
         else:
@@ -236,8 +242,11 @@ class NICER(nn.Module):
         # optimize image:
         print_msg("Starting optimization", 2)
         start_time = time.time()
+        last_iteration = 0
         for i in range(epochs):
             if thread_stopEvent.is_set(): break
+
+            last_iteration = i
 
             ## Check if sliders have been manually adjusted during last iteration, if yes apply adjustments
             while not self.in_queue.empty():
@@ -268,38 +277,42 @@ class NICER(nn.Module):
             loss = torch.tensor(1).to(self.device) - loss
             
             '''
-            score, enhanced_img = self.forward(image_tensor_transformed, new=True)
+            judge_score, enhanced_img, nima_score = self.forward(image_tensor_transformed, new=True)
 
-            print('Score = ' + str(weighted_mean(score, self.weights).item()))
+            judge_scores.append(weighted_mean(judge_score, self.weights, self.length).item())
+            nima_scores.append(weighted_mean(nima_score, self.weights, self.length).item())
+            print('Score = ' + str(weighted_mean(judge_score, self.weights, self.length).item()))
             #print("Loss before MSE: ")
             #print(nonmseloss)
 
             #Direct
-            #loss = nonmseloss['score']
+            #loss = nonmseloss['judge_score']
 
             #Invert
-            #loss = torch.tensor(1.0) - score_dict['score']
+            #loss = torch.tensor(1.0) - score_dict['judge_score']
 
             #dumb mean MSE loss
-            #loss = self.loss_func(torch.mean(score), torch.tensor(10.0).to(self.device))
+            #loss = self.loss_func(torch.mean(judge_score), torch.tensor(10.0).to(self.device))
 
             # weighted mean MSE loss, probably too high?
-            # loss = self.loss_func(weighted_mean(score, self.weights), torch.tensor(10.0).to(self.device))
+            # loss = self.loss_func(weighted_mean(judge_score, self.weights), torch.tensor(10.0).to(self.device))
 
             #weighted mean MSE loss, notmalized between 0 and 1
-            loss = torch.div(self.loss_func(weighted_mean(score, self.weights), self.target), torch.tensor(100).to(self.device))
+            loss = self.loss_func(weighted_mean(judge_score, self.weights, self.length), self.target)
+            losses.append(loss.item())
 
             # weighted mean loss
-            #loss = torch.div(self.target - weighted_mean(score, self.weights), self.target)
+            #loss = torch.div(self.target - weighted_mean(judge_score, self.weights), self.target)
 
             #L2 Loss from NICER, doesn't work here as is
             '''
             if re_init:
                 # new for each image
-                loss = loss_with_l2_regularization(score.cpu(), self.filters.cpu(), gamma=self.gamma)
+                loss = loss_with_l2_regularization(nima_score.cpu(), self.filters.cpu(), gamma=self.gamma)
             else:
-                loss = loss_with_l2_regularization(score.cpu(), self.filters.cpu(),
+                loss = loss_with_l2_regularization(nima_score.cpu(), self.filters.cpu(),
                                                    initial_filters=user_preset_filters, gamma=self.gamma)
+            losses.append(loss.item())
             '''
 
             #print("Loss after MSE: ")
@@ -344,6 +357,13 @@ class NICER(nn.Module):
 
             self.queue.put(enhanced_clipped)
             self.in_queue = queue.Queue()
+
+            plt.plot(judge_scores, label="judge judge_score")
+            plt.plot(nima_scores, label="NIMA judge_score")
+            plt.plot(losses, label="loss")
+            plt.xlabel('iterations')
+            plt.legend()
+            plt.show()
 
             # returns an 8bit image in any case ---
             return enhanced_clipped, None, None

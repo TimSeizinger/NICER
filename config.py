@@ -5,6 +5,8 @@ preview = True                                     # toggle to true to show prev
 interactive_preview_sliders = True                 # toggle to activate interactive sliders for preview when not training -> slower
 interactive_training_sliders = True                # toggle to activate interactive sliders during training -> slower
 
+debug_gifs = True                                   # creates gifs of the network editing
+
 gamma = 0.1
 epochs = 50
 optim = 'sgd'                                      # also supports adam

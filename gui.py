@@ -81,49 +81,49 @@ class NicerGui:
             self.saturation = DoubleVar()
             self.saturation_isfixed = IntVar()
             self.saturation_slider = Scale(master, from_=-100, to=100, length=sliderlength, orient=HORIZONTAL,
-                                                var=self.saturation, command=self.checkSliders)
+                                           var=self.saturation, command=self.check_sliders)
             self.saturation_checkbox = Checkbutton(master, var=self.saturation_isfixed)
 
             self.contrast = DoubleVar()
             self.contrast_isfixed = IntVar()
             self.contrast_slider = Scale(master, from_=-100, to=100, length=sliderlength, orient=HORIZONTAL,
-                                         var=self.contrast, command=self.checkSliders)
+                                         var=self.contrast, command=self.check_sliders)
             self.contrast_checkbox = Checkbutton(master, var=self.contrast_isfixed)
 
             self.brightness = DoubleVar()
             self.brightess_isfixed = IntVar()
             self.brightness_slider = Scale(master, from_=-100, to=100, length=sliderlength, orient=HORIZONTAL,
-                                           var=self.brightness, command=self.checkSliders)
+                                           var=self.brightness, command=self.check_sliders)
             self.brigtness_checkbox = Checkbutton(master, var=self.brightess_isfixed)
 
             self.shadows = DoubleVar()
             self.shadows_isfixed = IntVar()
             self.shadows_slider = Scale(master, from_=-100, to=100, length=sliderlength, orient=HORIZONTAL,
-                                        var=self.shadows, command=self.checkSliders)
+                                        var=self.shadows, command=self.check_sliders)
             self.shadows_checkbox = Checkbutton(master, var=self.shadows_isfixed)
 
             self.highlights = DoubleVar()
             self.highlighs_isfixed = IntVar()
             self.highlights_slider = Scale(master, from_=-100, to=100, length=sliderlength, orient=HORIZONTAL,
-                                           var=self.highlights, command=self.checkSliders)
+                                           var=self.highlights, command=self.check_sliders)
             self.highlights_checkbox = Checkbutton(master, var=self.highlighs_isfixed)
 
             self.exposure = DoubleVar()
             self.exposure_isfixed = IntVar()
             self.exposure_slider = Scale(master, from_=-100, to=100, length=sliderlength, orient=HORIZONTAL,
-                                         var=self.exposure, command=self.checkSliders)
+                                         var=self.exposure, command=self.check_sliders)
             self.exposure_checkbox = Checkbutton(master, var=self.exposure_isfixed)
 
             self.locallaplacian = DoubleVar()
             self.locallaplacian_isfixed = IntVar()
             self.locallaplacian_slider = Scale(master, from_=-100, to=100, length=sliderlength, orient=HORIZONTAL,
-                                               var=self.locallaplacian, command=self.checkSliders)
+                                               var=self.locallaplacian, command=self.check_sliders)
             self.locallaplacian_checkbox = Checkbutton(master, var=self.locallaplacian_isfixed)
 
             self.nonlocaldehazing = DoubleVar()
             self.nonlocaldehazing_isfixed = IntVar()
             self.nonlocaldehazing_slider = Scale(master, from_=-100, to=100, length=sliderlength, orient=HORIZONTAL,
-                                                 var=self.nonlocaldehazing, command=self.checkSliders)
+                                                 var=self.nonlocaldehazing, command=self.check_sliders)
             self.nonlocaldehazing_checkbox = Checkbutton(master, var=self.nonlocaldehazing_isfixed)
 
             self.gamma = DoubleVar()
@@ -208,6 +208,10 @@ class NicerGui:
             self.slider_input_flag = False
             self.slider_adj_by_NICER = False
             self.old_slider_vals = self.get_all_photo_slider_values()
+
+        # Used to generate debug gifs
+        if True:
+            self.images = []
 
     def about(self):
         url = 'https://github.com/mr-Mojo/NICER'
@@ -351,6 +355,7 @@ class NicerGui:
                                                     filetypes=(("as jpg file", "*.jpg"),
                                                                # ("as raw file", "*.png"),
                                                                ("all files", "*.*")))
+            if config.debug_gifs: self.make_gif(filepath)
 
             if len(filepath.split('.')) == 1:
                 filepath += '.jpg'
@@ -514,7 +519,9 @@ class NicerGui:
                     filterValues[7] = current_filter_values[5]  # exp is 7 in can but 5 in gui
 
                     preview_image = self.alternate_can(self.reference_img1, filterValues)
-                    self.reference_img2 = Image.fromarray(preview_image)
+                    image = Image.fromarray(preview_image)
+                    self.images.append(image)
+                    self.reference_img2 = image
                     self.display_img_two()
 
                 self.slider_adj_by_NICER = False
@@ -553,6 +560,7 @@ class NicerGui:
 
         # check if image is yet available, else do nothing
         if self.tk_img_panel_one.winfo_ismapped():
+            self.images = []
             self.interactive_sliders = False
             print("Interactive Sliders: " + str(self.interactive_sliders))
 
@@ -621,7 +629,7 @@ class NicerGui:
         # returns a np.array of type np.uint8
         return enhanced_clipped
 
-    def checkSliders(self, val):
+    def check_sliders(self, val):
         if self.old_slider_vals == self.get_all_photo_slider_values(): return
 
         if self.interactive_sliders and self.tk_img_panel_one.winfo_ismapped():
@@ -632,4 +640,8 @@ class NicerGui:
             self.old_slider_vals = self.get_all_photo_slider_values()
             self.nicer.in_queue.put(self.get_all_photo_slider_values())
 
-
+    def make_gif(self, path):
+        self.images[0].save(path + '.gif',
+                       save_all=True, append_images=self.images[1:], optimize=False, duration=len(self.images),
+                            loop=0)
+        self.images = []
