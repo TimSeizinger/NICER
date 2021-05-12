@@ -303,8 +303,17 @@ class NICER(nn.Module):
             # loss = self.loss_func(weighted_mean(judge_score, self.weights), torch.tensor(10.0).to(self.device))
 
             #weighted mean MSE loss, notmalized between 0 and 1
-            nima_loss = self.loss_func(weighted_mean(nima_score, self.weights, self.length), self.target)
-            nima_losses.append(nima_loss.item())
+            if config.MSE_loss_NIMA:
+                nima_loss = self.loss_func(weighted_mean(nima_score, self.weights, self.length), self.target)
+                nima_losses.append(nima_loss.item())
+            else:
+                if re_init:
+                    # new for each image
+                    nima_loss = loss_with_l2_regularization(nima_score.cpu(), self.filters.cpu(), gamma=self.gamma)
+                else:
+                    nima_loss = loss_with_l2_regularization(nima_score.cpu(), self.filters.cpu(),
+                                                       initial_filters=user_preset_filters, gamma=self.gamma)
+                    nima_losses.append(nima_loss.item())
 
             if self.finetuned:
                 judge_loss = self.loss_func(weighted_mean(judge_score, self.weights, self.length), self.target)
@@ -316,20 +325,11 @@ class NICER(nn.Module):
             # weighted mean loss
             #loss = torch.div(self.target - weighted_mean(judge_score, self.weights), self.target)
 
-            #L2 Loss from NICER, doesn't work here as is
-            '''
-            if re_init:
-                # new for each image
-                loss = loss_with_l2_regularization(judge_score.cpu(), self.filters.cpu(), gamma=self.gamma)
+            if config.MSE_loss_NIMA or config.legacy_loss_NIMA:
+                loss = nima_loss
             else:
-                loss = loss_with_l2_regularization(judge_score.cpu(), self.filters.cpu(),
-                                                   initial_filters=user_preset_filters, gamma=self.gamma)
-            losses.append(loss.item()/4)
-            '''
+                loss = judge_loss
 
-            loss = judge_loss
-            #print("Loss after MSE: ")
-            print('Loss = ' + str(loss.item()))
             loss.backward()
             self.optimizer.step()
 
@@ -375,12 +375,14 @@ class NICER(nn.Module):
             plt.plot(judge_losses, label="judge loss")
             plt.plot(nima_losses, label="NIMA loss")
             plt.xlabel('iterations')
+            plt.ylabel('loss')
             plt.legend()
             plt.show()
 
             plt.plot(judge_scores, label="judge score")
             plt.plot(nima_scores, label="NIMA score")
             plt.xlabel('iterations')
+            plt.ylabel('score')
             plt.legend()
             plt.show()
 

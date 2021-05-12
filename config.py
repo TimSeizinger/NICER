@@ -5,7 +5,9 @@ preview = True                                     # toggle to true to show prev
 interactive_preview_sliders = True                 # toggle to activate interactive sliders for preview when not training -> slower
 interactive_training_sliders = True                # toggle to activate interactive sliders during training -> slower
 
-debug_gifs = True                                   # creates gifs of the network editing
+debug_gifs = True                                  # creates gifs of the network editing
+legacy_loss_NIMA = False                            # switches to NIMA with the original NICER loss function
+MSE_loss_NIMA = True                              # switches to NIMA with the MSE loss used by Judge.
 
 gamma = 0.1
 epochs = 50
@@ -26,7 +28,7 @@ supported_extensions_raw = ['dng']                  # legacy, deprecated
 can_filter_count = 8
 can_checkpoint_path = 'models/can8_epoch10_final.pt'
 nima_checkpoint_path = 'models/nima_vgg_bright2.pkl'
-IA_checkpoint_path = 'models/pre-one-score-regression.pth'
+IA_checkpoint_path = 'models/fine-one-score-regression.pth'
 
 desired_distribution = [0.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.09, 0.15, 0.55, 0.20]
 
