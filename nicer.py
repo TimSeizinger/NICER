@@ -34,14 +34,16 @@ class NICER(nn.Module):
         can.eval()
         can.to(self.device)
 
-        #IA Judge
-        #judge = IA("scores-one, change_regress", True, False, mapping, None, pretrained=True)
-        #state = torch.load(config.IA_checkpoint_path)
+        self.finetuned = "fine" in config.IA_checkpoint_path
 
-        #IA2Nima Judge
-        judge = NIMA("scores-one, change_regress")
-        state = torch.load(config.IA_checkpoint_path)['model_state']
-
+        if self.finetuned:
+            # IA2NIMA Judge
+            judge = NIMA("scores-one, change_regress")
+            state = torch.load(config.IA_checkpoint_path)['model_state']
+        else:
+            # IA Judge
+            judge = IA("scores-one, change_regress", True, False, mapping, None, pretrained=True)
+            state = torch.load(config.IA_checkpoint_path)
         '''
         state['score.0.weight'] = state['classifier.1.weight']
         del state['classifier.1.weight']
@@ -212,7 +214,8 @@ class NICER(nn.Module):
 
         judge_scores = []
         nima_scores = []
-        losses = []
+        judge_losses = []
+        nima_losses = []
 
         if re_init:
             self.re_init()
@@ -242,11 +245,10 @@ class NICER(nn.Module):
         # optimize image:
         print_msg("Starting optimization", 2)
         start_time = time.time()
-        last_iteration = 0
+
         for i in range(epochs):
             if thread_stopEvent.is_set(): break
 
-            last_iteration = i
 
             ## Check if sliders have been manually adjusted during last iteration, if yes apply adjustments
             while not self.in_queue.empty():
@@ -254,14 +256,15 @@ class NICER(nn.Module):
 
             print_msg("Iteration {} of {}".format(i, epochs), 2)
 
-            '''
-            if fixFilters:
-                distribution, enhanced_img = self.forward(image_tensor_transformed, fixedFilters=initial_filter_values)
-            else:
-                distribution, enhanced_img = self.forward(image_tensor_transformed)
-
             self.optimizer.zero_grad()
 
+
+            if fixFilters:
+                judge_score, enhanced_img, nima_score = self.forward(image_tensor_transformed, fixedFilters=initial_filter_values)
+            else:
+                judge_score, enhanced_img, nima_score = self.forward(image_tensor_transformed)
+
+            '''
             if re_init:
                 # new for each image
                 loss = loss_with_l2_regularization(distribution.cpu(), self.filters.cpu(), gamma=self.gamma)
@@ -275,13 +278,15 @@ class NICER(nn.Module):
 
 
             loss = torch.tensor(1).to(self.device) - loss
-            
             '''
-            judge_score, enhanced_img, nima_score = self.forward(image_tensor_transformed, new=True)
 
-            judge_scores.append(weighted_mean(judge_score, self.weights, self.length).item())
+            if self.finetuned:
+                judge_scores.append(weighted_mean(judge_score, self.weights, self.length).item())
+            else:
+                judge_scores.append(judge_score['score'].item())
+
             nima_scores.append(weighted_mean(nima_score, self.weights, self.length).item())
-            print('Score = ' + str(weighted_mean(judge_score, self.weights, self.length).item()))
+
             #print("Loss before MSE: ")
             #print(nonmseloss)
 
@@ -298,23 +303,31 @@ class NICER(nn.Module):
             # loss = self.loss_func(weighted_mean(judge_score, self.weights), torch.tensor(10.0).to(self.device))
 
             #weighted mean MSE loss, notmalized between 0 and 1
-            #loss = self.loss_func(weighted_mean(judge_score, self.weights, self.length), self.target)
-            #losses.append(loss.item())
+            nima_loss = self.loss_func(weighted_mean(nima_score, self.weights, self.length), self.target)
+            nima_losses.append(nima_loss.item())
+
+            if self.finetuned:
+                judge_loss = self.loss_func(weighted_mean(judge_score, self.weights, self.length), self.target)
+                judge_losses.append(judge_loss.item())
+            else:
+                judge_loss = self.loss_func(judge_score['score'], self.target)
+                judge_losses.append(judge_loss.item())
 
             # weighted mean loss
             #loss = torch.div(self.target - weighted_mean(judge_score, self.weights), self.target)
 
             #L2 Loss from NICER, doesn't work here as is
-
+            '''
             if re_init:
                 # new for each image
-                loss = loss_with_l2_regularization(nima_score.cpu(), self.filters.cpu(), gamma=self.gamma)
+                loss = loss_with_l2_regularization(judge_score.cpu(), self.filters.cpu(), gamma=self.gamma)
             else:
-                loss = loss_with_l2_regularization(nima_score.cpu(), self.filters.cpu(),
+                loss = loss_with_l2_regularization(judge_score.cpu(), self.filters.cpu(),
                                                    initial_filters=user_preset_filters, gamma=self.gamma)
             losses.append(loss.item()/4)
+            '''
 
-
+            loss = judge_loss
             #print("Loss after MSE: ")
             print('Loss = ' + str(loss.item()))
             loss.backward()
@@ -358,9 +371,15 @@ class NICER(nn.Module):
             self.queue.put(enhanced_clipped)
             self.in_queue = queue.Queue()
 
-            plt.plot(judge_scores, label="judge judge_score")
-            plt.plot(nima_scores, label="NIMA judge_score")
-            plt.plot(losses, label="loss")
+
+            plt.plot(judge_losses, label="judge loss")
+            plt.plot(nima_losses, label="NIMA loss")
+            plt.xlabel('iterations')
+            plt.legend()
+            plt.show()
+
+            plt.plot(judge_scores, label="judge score")
+            plt.plot(nima_scores, label="NIMA score")
             plt.xlabel('iterations')
             plt.legend()
             plt.show()
