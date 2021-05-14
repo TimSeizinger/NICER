@@ -5,6 +5,7 @@ import numpy as np
 import rawpy
 import torch
 import torchvision.transforms as transforms
+import matplotlib.pyplot as plt
 from PIL import Image
 from skimage.transform import resize
 
@@ -147,3 +148,29 @@ def loss_with_l2_regularization(nima_result, filters, gamma=config.gamma, initia
 
 def weighted_mean(inputs, weights, length):
     return torch.div(torch.sum(weights * inputs), length)
+
+
+def make_gif(images, path):
+    images[0].save(path + '.gif',
+                    save_all=True, append_images=images[1:], optimize=False, duration=len(images), loop=0)
+
+
+def make_graphs(graph_data, path, filename):
+    if config.save_loss_graph:
+        path_losses = path + '_losses'
+        plt.title(filename + " Losses")
+        plt.plot(graph_data['judge_losses'], label="judge loss")
+        plt.plot(graph_data['nima_losses'], label="NIMA loss")
+        plt.xlabel('iterations')
+        plt.ylabel('loss')
+        plt.legend()
+        plt.savefig(path_losses)
+    if config.save_score_graph:
+        path_scores = path + '_scores'
+        plt.title(filename + " Scores")
+        plt.plot(graph_data['judge_scores'], label="judge score")
+        plt.plot(graph_data['nima_scores'], label="NIMA score")
+        plt.xlabel('iterations')
+        plt.ylabel('score')
+        plt.legend()
+        plt.savefig(path_scores)

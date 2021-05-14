@@ -5,9 +5,14 @@ preview = True                                     # toggle to true to show prev
 interactive_preview_sliders = True                 # toggle to activate interactive sliders for preview when not training -> slower
 interactive_training_sliders = True                # toggle to activate interactive sliders during training -> slower
 
-debug_gifs = True                                  # creates gifs of the network editing
-legacy_loss_NIMA = False                            # switches to NIMA with the original NICER loss function
-MSE_loss_NIMA = True                              # switches to NIMA with the MSE loss used by Judge.
+legacy_loss_NIMA = False                           # switches to NIMA with the original NICER loss function
+MSE_loss_NIMA = True                               # switches to NIMA with the MSE loss used by Judge.
+
+save_animation = True                              # saves animation of the network editing
+save_loss_graph = True                             # saves loss graph
+save_score_graph = True                            # saves score graph
+animate_graphs = True                              # saves animated versions of graphs
+
 
 gamma = 0.1
 epochs = 50

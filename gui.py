@@ -15,6 +15,7 @@ import config
 from autobright import normalize_brightness
 from neural_models import CAN
 from nicer import NICER, print_msg
+from utils import make_gif, make_graphs
 
 running = True
 
@@ -211,7 +212,8 @@ class NicerGui:
 
         # Used to generate debug gifs
         if True:
-            self.images = []
+            self.images = None
+            self.graph_data = None
 
     def about(self):
         url = 'https://github.com/mr-Mojo/NICER'
@@ -355,7 +357,17 @@ class NicerGui:
                                                     filetypes=(("as jpg file", "*.jpg"),
                                                                # ("as raw file", "*.png"),
                                                                ("all files", "*.*")))
-            if config.debug_gifs: self.make_gif(filepath)
+
+            filepath = filepath.split('.')[0]  # remove file extension
+            filename = filepath.split('/')[-1]
+            filepath += '/'
+            os.mkdir(filepath)
+            filepath += filename
+            if config.save_animation:
+                make_gif(self.images, filepath)
+
+            if self.graph_data is not None and (config.save_score_graph or config.save_loss_graph):
+                make_graphs(self.graph_data, filepath, filename)
 
             if len(filepath.split('.')) == 1:
                 filepath += '.jpg'
@@ -500,6 +512,8 @@ class NicerGui:
                     self.print_label['text'] = 'Optimizing epoch {} of {}'.format(str(msg), self.epochCount)
                 elif isinstance(msg, list):  # passed the filter values
                     self.set_all_image_filter_sliders([x * 100 for x in msg])
+                elif isinstance(msg, dict):
+                    self.graph_data = msg
                 elif isinstance(msg, np.ndarray):  # thread terminated, passed the last enhanced image
                     enhanced_img_pil = Image.fromarray(msg)
                     self.reference_img2 = enhanced_img_pil
@@ -560,6 +574,7 @@ class NicerGui:
 
         # check if image is yet available, else do nothing
         if self.tk_img_panel_one.winfo_ismapped():
+            self.graph_data = None
             self.images = []
             self.interactive_sliders = False
             print("Interactive Sliders: " + str(self.interactive_sliders))
@@ -639,9 +654,3 @@ class NicerGui:
         elif config.interactive_training_sliders and self.tk_img_panel_one.winfo_ismapped() and not self.slider_adj_by_NICER:
             self.old_slider_vals = self.get_all_photo_slider_values()
             self.nicer.in_queue.put(self.get_all_photo_slider_values())
-
-    def make_gif(self, path):
-        self.images[0].save(path + '.gif',
-                       save_all=True, append_images=self.images[1:], optimize=False, duration=len(self.images),
-                            loop=0)
-        self.images = []

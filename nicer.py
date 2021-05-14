@@ -12,7 +12,6 @@ import config
 from autobright import normalize_brightness
 from neural_models import error_callback, CAN, NIMA_VGG
 from utils import nima_transform, print_msg, loss_with_l2_regularization, weighted_mean
-import matplotlib.pyplot as plt
 
 from IA_folder.old.utils import mapping
 from IA_folder.IA import IA
@@ -44,20 +43,6 @@ class NICER(nn.Module):
             # IA Judge
             judge = IA("scores-one, change_regress", True, False, mapping, None, pretrained=True)
             state = torch.load(config.IA_checkpoint_path)
-        '''
-        state['score.0.weight'] = state['classifier.1.weight']
-        del state['classifier.1.weight']
-        state['score.0.bias'] = state['classifier.1.bias']
-        del state['classifier.1.bias']
-        
-        
-        del state['styles_change_strength.1.weight']
-        del state['styles_change_strength.1.bias']
-        del state['technical_change_strength.1.weight']
-        del state['technical_change_strength.1.bias']
-        del state['composition_change_strength.1.weight']
-        del state['composition_change_strength.1.bias']
-        '''
 
         judge.load_state_dict(state)
         judge.eval()
@@ -368,23 +353,12 @@ class NICER(nn.Module):
             enhanced_clipped = np.clip(enhanced_img, 0.0, 1.0) * 255.0
             enhanced_clipped = enhanced_clipped.astype('uint8')
 
+            graph_data = {'judge_losses': judge_losses, 'nima_losses': nima_losses, 'judge_scores': judge_scores,
+                          'nima_scores': nima_scores}
+            self.queue.put(graph_data)
+
             self.queue.put(enhanced_clipped)
             self.in_queue = queue.Queue()
-
-
-            plt.plot(judge_losses, label="judge loss")
-            plt.plot(nima_losses, label="NIMA loss")
-            plt.xlabel('iterations')
-            plt.ylabel('loss')
-            plt.legend()
-            plt.show()
-
-            plt.plot(judge_scores, label="judge score")
-            plt.plot(nima_scores, label="NIMA score")
-            plt.xlabel('iterations')
-            plt.ylabel('score')
-            plt.legend()
-            plt.show()
 
             # returns an 8bit image in any case ---
             return enhanced_clipped, None, None
