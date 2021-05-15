@@ -156,20 +156,13 @@ def weighted_mean(inputs, weights, length):
 
 def make_animation(img, path, filename):
     wdir = os.getcwd()
-    os.chdir(path)
+    os.chdir(path)  # Change working directory to save directory for video.release() as it always saves to the correct working directory
     frames = []
-    size = ()
     for i in range(len(img)):
         fig = plt.figure()
-        plt.title(config.IA_checkpoint_path.split('/')[-1].split('.')[0] + " on " + filename + " iteration " + str(i+1) + " out of " + str(len(img)))
+        create_title(filename, img, i)
         plt.imshow(img[i])
-        fig.canvas.draw()
-        frame = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8,
-                            sep='')
-        frame = frame.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        plt.close()
-        frames.append(frame)
+        frames.append(get_openCV_image(fig))
 
     height, width, layers = frames[0].shape
     size = (width, height)
@@ -181,8 +174,50 @@ def make_animation(img, path, filename):
     os.chdir(wdir)
 
 
+def make_animation_with_extra_info(img, graph_data: dict, path, filename):
+    wdir = os.getcwd()
+    os.chdir(path)  # Change working directory to save directory for video.release() as it always saves to the correct working directory
+    frames = []
+    for i in range(len(img)):
+        fig = plt.figure()
+        create_title(filename, img, i)
+        if (config.MSE_loss_NIMA or config.legacy_loss_NIMA) and i < len(graph_data['nima_scores']):
+            plt.figtext(0.125, 0.035, "Score: " + str(graph_data['nima_scores'][i]))
+            plt.figtext(0.6, 0.035, "Loss: " + str(graph_data['nima_losses'][i]))
+        elif i < len(graph_data['nima_scores']):
+            plt.figtext(0.125, 0.03, "Score: " + " {:.4f}".format((graph_data['judge_scores'][i]*10)))
+            plt.figtext(0.5, 0.03, "Loss: " + " {:.4f}".format(graph_data['judge_losses'][i]))
+        frames.append(get_openCV_image(fig))
 
-def make_graphs(graph_data, path, filename):
+    height, width, layers = frames[0].shape
+    size = (width, height)
+    fourcc = cv2.VideoWriter_fourcc(*'avc1')
+    video = cv2.VideoWriter(filename + '_animation_with_extra_info.mp4', fourcc, 10, size)
+    for i in range(len(frames)):
+        video.write(frames[i])
+    video.release()
+    os.chdir(wdir)
+
+
+def create_title(filename, img, i):
+    if config.legacy_loss_NIMA:
+        plt.title("NICER loss NIMA" + " on " + filename + " iteration " + str(i + 1) + " out of " + str(len(img)))
+    elif config.MSE_loss_NIMA:
+        plt.title("MSE loss NIMA" + " on " + filename + " iteration " + str(i + 1) + " out of " + str(len(img)))
+    else:
+        plt.title(config.IA_checkpoint_path.split('/')[-1].split('.')[0] + " on " + filename + " iteration " + str(
+            i + 1) + " out of " + str(len(img)))
+    plt.imshow(img[i])
+
+def get_openCV_image(fig):
+    fig.canvas.draw()
+    frame = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+    frame = frame.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+    plt.close()
+    return cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
+
+def make_graphs(graph_data: dict, path, filename):
     if config.save_loss_graph:
         path_losses = path + '_losses'
         plt.title(filename + " Losses")

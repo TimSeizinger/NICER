@@ -15,7 +15,7 @@ import config
 from autobright import normalize_brightness
 from neural_models import CAN
 from nicer import NICER, print_msg
-from utils import make_animation, make_graphs
+from utils import make_animation, make_animation_with_extra_info, make_graphs
 
 running = True
 
@@ -367,13 +367,21 @@ class NicerGui:
                 if not os.path.exists('out/'):
                     os.mkdir('out/')
                 filename = self.img_namestring.split('/')[-1]
-                filepath = 'out/' + filename + '_' + config.IA_checkpoint_path.split('/')[-1].split('.')[0] + '/'
+                if config.legacy_loss_NIMA:
+                    filepath = 'out/' + filename + '_' + "NICER loss NIMA" + '/'
+                elif config.MSE_loss_NIMA:
+                    filepath = 'out/' + filename + '_' "MSE loss NIMA" + '/'
+                else:
+                    filepath = 'out/' + filename + '_' + config.IA_checkpoint_path.split('/')[-1].split('.')[0] + '/'
 
             if not os.path.exists(filepath):
                 os.mkdir(filepath)
 
             if config.save_animation:
                 make_animation(self.images, filepath, filename)
+
+            if self.graph_data is not None and config.save_animation_with_extra_info:
+                make_animation_with_extra_info(self.images, self.graph_data, filepath, filename)
 
             if self.graph_data is not None and (config.save_score_graph or config.save_loss_graph):
                 make_graphs(self.graph_data, filepath, filename)

@@ -6,9 +6,10 @@ interactive_preview_sliders = True                 # toggle to activate interact
 interactive_training_sliders = True                # toggle to activate interactive sliders during training -> slower
 
 legacy_loss_NIMA = False                           # switches to NIMA with the original NICER loss function
-MSE_loss_NIMA = True                               # switches to NIMA with the MSE loss used by Judge.
+MSE_loss_NIMA = False                              # switches to NIMA with the MSE loss used by Judge.
 
-save_animation = True                              # saves animation of the network editing
+save_animation = False                              # saves animation of the network editing
+save_animation_with_extra_info = True              # saves animation of the network editing with extra loss and score values
 save_loss_graph = True                             # saves loss graph
 save_score_graph = True                            # saves score graph
 animate_graphs = True                              # saves animated versions of graphs

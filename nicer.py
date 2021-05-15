@@ -272,17 +272,18 @@ class NICER(nn.Module):
             # loss = self.loss_func(weighted_mean(judge_score, self.weights), torch.tensor(10.0).to(self.device))
 
             #weighted mean MSE loss, notmalized between 0 and 1
-            if config.MSE_loss_NIMA:
-                nima_loss = self.loss_func(weighted_mean(nima_score, self.weights, self.length), self.target)
-                nima_losses.append(nima_loss.item())
-            else:
+            if config.legacy_loss_NIMA:
                 if re_init:
                     # new for each image
                     nima_loss = loss_with_l2_regularization(nima_score.cpu(), self.filters.cpu(), gamma=self.gamma)
+                    #nima_losses.append(nima_loss.item())
                 else:
                     nima_loss = loss_with_l2_regularization(nima_score.cpu(), self.filters.cpu(),
                                                        initial_filters=user_preset_filters, gamma=self.gamma)
                     nima_losses.append(nima_loss.item())
+            else:
+                nima_loss = self.loss_func(weighted_mean(nima_score, self.weights, self.length), self.target)
+                nima_losses.append(nima_loss.item())
 
             if self.finetuned:
                 judge_loss = self.loss_func(weighted_mean(judge_score, self.weights, self.length), self.target)
