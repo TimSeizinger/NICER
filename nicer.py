@@ -249,22 +249,6 @@ class NICER(nn.Module):
             else:
                 judge_score, enhanced_img, nima_score = self.forward(image_tensor_transformed)
 
-            '''
-            if re_init:
-                # new for each image
-                loss = loss_with_l2_regularization(distribution.cpu(), self.filters.cpu(), gamma=self.gamma)
-            else:
-                loss = loss_with_l2_regularization(distribution.cpu(), self.filters.cpu(),
-                                                   initial_filters=user_preset_filters, gamma=self.gamma)
-                '''
-
-            '''
-            loss, enhanced_img = self.forward(image_tensor_transformed, new=True)
-
-
-            loss = torch.tensor(1).to(self.device) - loss
-            '''
-
             if self.finetuned:
                 judge_scores.append(weighted_mean(judge_score, self.weights, self.length).item())
             else:

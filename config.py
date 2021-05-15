@@ -13,6 +13,8 @@ save_loss_graph = True                             # saves loss graph
 save_score_graph = True                            # saves score graph
 animate_graphs = True                              # saves animated versions of graphs
 
+choose_save_name_and_folder = False                # able to specify image output folder and name
+
 
 gamma = 0.1
 epochs = 50

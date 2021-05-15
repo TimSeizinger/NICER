@@ -1,11 +1,15 @@
 import sys
 from collections.abc import Iterable
 
-import numpy as np
 import rawpy
 import torch
+import os
+import numpy as np
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import cv2
+
 from PIL import Image
 from skimage.transform import resize
 
@@ -150,9 +154,29 @@ def weighted_mean(inputs, weights, length):
     return torch.div(torch.sum(weights * inputs), length)
 
 
-def make_gif(images, path):
-    images[0].save(path + '.gif',
-                    save_all=True, append_images=images[1:], optimize=False, duration=len(images), loop=0)
+def make_gif(img, path, filename):
+    wdir = os.getcwd()
+    os.chdir(path)
+    frames = []
+    size = ()
+    for i in range(len(img)):
+        plt.title(config.IA_checkpoint_path.split('/')[-1].split('.')[0] + " on " + filename + " iteration " + str(i+1) + " out of " + str(len(img)))
+        plt.imshow(img[i])
+        plt.savefig('tempfile.png')
+        plt.close()
+        frame = cv2.imread('tempfile.png', 1)
+        height, width, layers = frame.shape
+        size = (width, height)
+        frames.append(frame)
+
+    fourcc = cv2.VideoWriter_fourcc(*'avc1')
+    video = cv2.VideoWriter(filename + '_animation.mp4', fourcc, 10, size)
+    for i in range(len(frames)):
+        video.write(frames[i])
+    video.release()
+    os.remove('tempfile.png')
+    os.chdir(wdir)
+
 
 
 def make_graphs(graph_data, path, filename):
@@ -164,7 +188,9 @@ def make_graphs(graph_data, path, filename):
         plt.xlabel('iterations')
         plt.ylabel('loss')
         plt.legend()
-        plt.savefig(path_losses)
+        plt.savefig(path_losses + filename)
+        plt.close()
+
     if config.save_score_graph:
         path_scores = path + '_scores'
         plt.title(filename + " Scores")
@@ -173,4 +199,5 @@ def make_graphs(graph_data, path, filename):
         plt.xlabel('iterations')
         plt.ylabel('score')
         plt.legend()
-        plt.savefig(path_scores)
+        plt.savefig(path_scores + filename)
+        plt.close()

@@ -353,24 +353,32 @@ class NicerGui:
         """
 
         if self.tk_img_panel_two.winfo_ismapped() and self.slider_variables:
-            filepath = filedialog.asksaveasfilename(initialdir=os.getcwd(), title="Save the edited image",
-                                                    filetypes=(("as jpg file", "*.jpg"),
-                                                               # ("as raw file", "*.png"),
-                                                               ("all files", "*.*")))
 
-            filepath = filepath.split('.')[0]  # remove file extension
-            filename = filepath.split('/')[-1]
-            filepath += '/'
-            os.mkdir(filepath)
-            filepath += filename
+            if config.choose_save_name_and_folder:
+                filepath = filedialog.asksaveasfilename(initialdir=os.getcwd(), title="Save the edited image",
+                                                        filetypes=(("as jpg file", "*.jpg"),
+                                                                   # ("as raw file", "*.png"),
+                                                                   ("all files", "*.*")))
+
+                filepath = filepath.split('.')[0]  # remove file extension
+                filename = filepath.split('/')[-1]
+                filepath += '/'
+            else:
+                if not os.path.exists('out/'):
+                    os.mkdir('out/')
+                filename = self.img_namestring.split('/')[-1]
+                filepath = 'out/' + filename + '_' + config.IA_checkpoint_path.split('/')[-1].split('.')[0] + '/'
+
+            if not os.path.exists(filepath):
+                os.mkdir(filepath)
+
             if config.save_animation:
-                make_gif(self.images, filepath)
+                make_gif(self.images, filepath, filename)
 
             if self.graph_data is not None and (config.save_score_graph or config.save_loss_graph):
                 make_graphs(self.graph_data, filepath, filename)
 
-            if len(filepath.split('.')) == 1:
-                filepath += '.jpg'
+            filepath += filename + '.jpg'
 
             self.print_label['text'] = 'Saving image...'
 
