@@ -15,7 +15,7 @@ import config
 from autobright import normalize_brightness
 from neural_models import CAN
 from nicer import NICER, print_msg
-from utils import make_gif, make_graphs
+from utils import make_animation, make_graphs
 
 running = True
 
@@ -373,7 +373,7 @@ class NicerGui:
                 os.mkdir(filepath)
 
             if config.save_animation:
-                make_gif(self.images, filepath, filename)
+                make_animation(self.images, filepath, filename)
 
             if self.graph_data is not None and (config.save_score_graph or config.save_loss_graph):
                 make_graphs(self.graph_data, filepath, filename)

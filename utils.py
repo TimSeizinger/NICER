@@ -154,27 +154,30 @@ def weighted_mean(inputs, weights, length):
     return torch.div(torch.sum(weights * inputs), length)
 
 
-def make_gif(img, path, filename):
+def make_animation(img, path, filename):
     wdir = os.getcwd()
     os.chdir(path)
     frames = []
     size = ()
     for i in range(len(img)):
+        fig = plt.figure()
         plt.title(config.IA_checkpoint_path.split('/')[-1].split('.')[0] + " on " + filename + " iteration " + str(i+1) + " out of " + str(len(img)))
         plt.imshow(img[i])
-        plt.savefig('tempfile.png')
+        fig.canvas.draw()
+        frame = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8,
+                            sep='')
+        frame = frame.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         plt.close()
-        frame = cv2.imread('tempfile.png', 1)
-        height, width, layers = frame.shape
-        size = (width, height)
         frames.append(frame)
 
+    height, width, layers = frames[0].shape
+    size = (width, height)
     fourcc = cv2.VideoWriter_fourcc(*'avc1')
     video = cv2.VideoWriter(filename + '_animation.mp4', fourcc, 10, size)
     for i in range(len(frames)):
         video.write(frames[i])
     video.release()
-    os.remove('tempfile.png')
     os.chdir(wdir)
 
 
