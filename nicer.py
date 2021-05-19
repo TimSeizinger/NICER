@@ -84,6 +84,12 @@ class NICER(nn.Module):
             error_callback('optimizer')
 
     def forward(self, image, fixedFilters=None, new=False):
+        torch.cuda.synchronize()
+
+        # for benchmarking
+        start = torch.cuda.Event(enable_timing=True)
+        end = torch.cuda.Event(enable_timing=True)
+
         filter_tensor = torch.zeros((8, 224, 224), dtype=torch.float32).to(self.device)
 
         # construct filtermap uniformly from given filters
@@ -98,11 +104,30 @@ class NICER(nn.Module):
 
         mapped_img = torch.cat((image, filter_tensor.cpu()), dim=0).unsqueeze(dim=0).to(
             self.device)  # concat filters and img
+
+
+        start.record()
         enhanced_img = self.can(mapped_img)  # enhance img with CAN
+        torch.cuda.synchronize()
+        end.record()
+        torch.cuda.synchronize()
+        print("CAN inference time: " + str(start.elapsed_time(end)))
 
+        start.record()
         judge_distr_of_ratings = self.judge(enhanced_img)  # get judge score distribution -> tensor
+        torch.cuda.synchronize()
+        end.record()
+        torch.cuda.synchronize()
 
+        print("Judge inference time: " + str(start.elapsed_time(end)))
+
+        start.record()
         nima_distr_of_ratings = self.nima(enhanced_img)  # get nima score distribution -> tensor
+        torch.cuda.synchronize()
+        end.record()
+        torch.cuda.synchronize()
+
+        print("NIMA inference time: " + str(start.elapsed_time(end)))
 
         self.queue.put('dummy')  # dummy
 
@@ -235,9 +260,9 @@ class NICER(nn.Module):
             if thread_stopEvent.is_set(): break
 
 
-            ## Check if sliders have been manually adjusted during last iteration, if yes apply adjustments
-            while not self.in_queue.empty():
-                self.set_filters(self.in_queue.get())
+            ## Check if sliders have been manually adjusted during last iteration, if yes apply adjustments (buggy af)
+            #while not self.in_queue.empty():
+            #    self.set_filters(self.in_queue.get())
 
             print_msg("Iteration {} of {}".format(i, epochs), 2)
 

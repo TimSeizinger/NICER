@@ -182,8 +182,8 @@ def make_animation_with_extra_info(img, graph_data: dict, path, filename):
         fig = plt.figure()
         create_title(filename, img, i)
         if (config.MSE_loss_NIMA or config.legacy_loss_NIMA) and i < len(graph_data['nima_scores']):
-            plt.figtext(0.125, 0.035, "Score: " + str(graph_data['nima_scores'][i]))
-            plt.figtext(0.6, 0.035, "Loss: " + str(graph_data['nima_losses'][i]))
+            plt.figtext(0.125, 0.035, "Score: " + " {:.4f}".format((graph_data['nima_scores'][i]*10)))
+            plt.figtext(0.6, 0.035, "Loss: " + " {:.4f}".format(graph_data['nima_losses'][i]))
         elif i < len(graph_data['nima_scores']):
             plt.figtext(0.125, 0.03, "Score: " + " {:.4f}".format((graph_data['judge_scores'][i]*10)))
             plt.figtext(0.5, 0.03, "Loss: " + " {:.4f}".format(graph_data['judge_losses'][i]))
