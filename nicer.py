@@ -33,42 +33,47 @@ class NICER(nn.Module):
         can.eval()
         can.to(self.device)
 
-        self.finetuned = "fine" in config.IA_fine_checkpoint_path
+        self.finetuned = "fine" in config.IA_fine_checkpoint_path #TODO Remove this line
 
-        if self.finetuned:
-            # IA2NIMA Judge
-            judge = NIMA("scores-one, change_regress")
-            state = torch.load(config.IA_fine_checkpoint_path)['model_state']
-        else:
-            # IA Judge
-            judge = IA("scores-one, change_regress", True, False, mapping, None, pretrained=True)
-            state = torch.load(config.IA_fine_checkpoint_path)
+        nima_mobilenetv2 = NIMA("scores-one, change_regress")
+        nima_mobilenetv2.load_state_dict(torch.load(config.nima_mobilenet_checkpoint_path)['model_state'])
+        nima_mobilenetv2.eval()
+        nima_mobilenetv2.to(self.device)
 
-        judge.load_state_dict(state)
-        judge.eval()
-        judge.to(self.device)
+        nima_vgg16 = NIMA_VGG(models.vgg16(pretrained=True))
+        nima_vgg16.load_state_dict(torch.load(checkpoint_nima, map_location=self.device))
+        nima_vgg16.eval()
+        nima_vgg16.to(self.device)
 
+        ia_pre = IA("scores-one, change_regress", True, False, mapping, None, pretrained=True)
+        ia_pre.load_state_dict(torch.load(config.IA_pre_checkpoint_path))
+        ia_pre.eval()
+        nima_vgg16.to(self.device)
 
-        nima = NIMA_VGG(models.vgg16(pretrained=True))
-        nima.load_state_dict(torch.load(checkpoint_nima, map_location=self.device))
-        nima.eval()
-        nima.to(self.device)
-
+        ia_fine = NIMA("scores-one, change_regress")
+        ia_fine.load_state_dict(torch.load(config.IA_fine_checkpoint_path)['model_state'])
+        ia_fine.eval()
+        ia_fine.to(self.device)
 
         torch.autograd.set_detect_anomaly(True)
 
         ## queue for outputs to GUI
         self.queue = queue.Queue()
 
-        ##queue for interactive slider inputs from GUI
+        ##queue for interactive slider inputs from GUI (deprecated)
         self.in_queue = queue.Queue()
 
         # self.filters is a leaf-variable, bc it's created directly and not as part of an operation
         self.filters = torch.tensor([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], dtype=torch.float32, requires_grad=True,
                                     device=self.device)
         self.can = can
-        self.nima = nima
-        self.judge = judge
+
+        # Image assessor networks
+        self.nima_vgg16 = nima_vgg16
+        self.nima_mobilenetv2 = nima_mobilenetv2
+        self.ia_pre = ia_pre
+        self.ia_fine = ia_fine
+
         self.loss_func = nn.MSELoss('mean').to(self.device)
         self.weights = torch.tensor([[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]]).to(self.device)
         self.target = torch.tensor(1.0).to(self.device)
@@ -113,25 +118,45 @@ class NICER(nn.Module):
         torch.cuda.synchronize()
         print("CAN inference time: " + str(start.elapsed_time(end)))
 
+        #NIMA_VGG16
         start.record()
-        judge_distr_of_ratings = self.judge(enhanced_img)  # get judge score distribution -> tensor
+        nima_vgg16_distr_of_ratings = self.nima_vgg16(enhanced_img)  # get nima_vgg16 score distribution -> tensor
         torch.cuda.synchronize()
         end.record()
         torch.cuda.synchronize()
+        print("NIMA_VGG16 inference time: " + str(start.elapsed_time(end)))
 
-        print("Judge inference time: " + str(start.elapsed_time(end)))
-
+        #NIMA_mobilenetv2
         start.record()
-        nima_distr_of_ratings = self.nima(enhanced_img)  # get nima score distribution -> tensor
+        nima_mobilenetv2_distr_of_ratings = self.nima_mobilenetv2(enhanced_img)  # get nima_mobilenetv2 score distribution -> tensor
         torch.cuda.synchronize()
         end.record()
         torch.cuda.synchronize()
+        print("NIMA_mobilenetv2 inference time: " + str(start.elapsed_time(end)))
 
-        print("NIMA inference time: " + str(start.elapsed_time(end)))
+        #TODO For some reason this is broken...
+        '''
+        #IA_pre
+        start.record()
+        ia_pre_rating = self.ia_pre(enhanced_img)  # get ia_pre score -> tensor #TODO is it a tensor?
+        torch.cuda.synchronize()
+        end.record()
+        torch.cuda.synchronize()
+        print("IA_pre inference time: " + str(start.elapsed_time(end)))
+        print(type(ia_pre_rating))
+        '''
+
+        #IA_fine
+        start.record()
+        IA_fine_distr_of_ratings = self.ia_fine(enhanced_img)  # get ia_fine score distribution -> tensor
+        torch.cuda.synchronize()
+        end.record()
+        torch.cuda.synchronize()
+        print("IA_fine inference time: " + str(start.elapsed_time(end)))
 
         self.queue.put('dummy')  # dummy
 
-        return judge_distr_of_ratings, enhanced_img, nima_distr_of_ratings
+        return nima_mobilenetv2_distr_of_ratings, enhanced_img, nima_vgg16_distr_of_ratings
 
     def set_filters(self, filter_list):
         # usually called from GUI

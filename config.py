@@ -39,7 +39,7 @@ can_checkpoint_path = 'models/can8_epoch10_final.pt'
 nima_checkpoint_path = 'models/nima_vgg_bright2.pkl'
 nima_mobilenet_checkpoint_path = 'models/fine-imagenet.pth'
 IA_pre_checkpoint_path = 'models/pre-one-score-regression.pth'
-IA_fine_checkpoint_path = 'models/fine-imagenet.pth'
+IA_fine_checkpoint_path = 'models/fine-one-score-regression.pth'
 
 desired_distribution = [0.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.09, 0.15, 0.55, 0.20]
 
