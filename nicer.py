@@ -316,8 +316,8 @@ class NICER(nn.Module):
                 judge_loss = self.loss_func(weighted_mean(judge_score, self.weights, self.length), self.target)
                 judge_losses.append(judge_loss.item())
             else:
-                #judge_loss = self.loss_func(judge_score['styles_change_strength'], torch.zeros(judge_score['styles_change_strength'].size()[0]).to(self.device))
-                judge_loss = self.loss_func(judge_score['score'], self.target*0)
+                judge_loss = self.loss_func(judge_score['styles_change_strength'], torch.zeros(judge_score['styles_change_strength'].size()[1]).to(self.device))
+                #judge_loss = self.loss_func(judge_score['score'], self.target*0)
                 judge_losses.append(judge_loss.item())
                 print(judge_score['styles_change_strength'].size())
                 print(judge_score['styles_change_strength'].size()[0])
