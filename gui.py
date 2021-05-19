@@ -15,7 +15,7 @@ import config
 from autobright import normalize_brightness
 from neural_models import CAN
 from nicer import NICER, print_msg
-from utils import make_animation, make_animation_with_extra_info, make_graphs
+from utils import make_animation, make_animation_with_extra_info, make_graphs, make_graph_animations, make_full_info_animation
 
 running = True
 
@@ -372,19 +372,27 @@ class NicerGui:
                 elif config.MSE_loss_NIMA:
                     filepath = 'out/' + filename + '_' "MSE loss NIMA" + '/'
                 else:
-                    filepath = 'out/' + filename + '_' + config.IA_checkpoint_path.split('/')[-1].split('.')[0] + '/'
+                    filepath = 'out/' + filename + '_' + config.IA_fine_checkpoint_path.split('/')[-1].split('.')[0] + '/'
 
             if not os.path.exists(filepath):
                 os.mkdir(filepath)
 
+
+
             if config.save_animation:
                 make_animation(self.images, filepath, filename)
+
+            if self.graph_data is not None and config.animate_graphs:
+                make_graph_animations(self.graph_data, filepath, filename)
 
             if self.graph_data is not None and config.save_animation_with_extra_info:
                 make_animation_with_extra_info(self.images, self.graph_data, filepath, filename)
 
             if self.graph_data is not None and (config.save_score_graph or config.save_loss_graph):
                 make_graphs(self.graph_data, filepath, filename)
+
+            if self.graph_data is not None and config.save_composite_animation:
+                make_full_info_animation(self.images, self.graph_data, filepath, filename, resolution=200)
 
             filepath += filename + '.jpg'
 
@@ -638,8 +646,6 @@ class NicerGui:
         image = Image.fromarray(bright_norm_img)
         image_tensor = transforms.ToTensor()(image)
 
-        ##TODO What's going on here exactly: image tensor is getting combined with the filter tensor?
-        ##                   8 Filters, X resolution         ,Y resolution; all initializen with 0
         filter_tensor = torch.zeros((8, image_tensor.shape[1], image_tensor.shape[2]),
                                     dtype=torch.float32).to(self.device)  # tensorshape [c,w,h]
         ##Assign the values of the filters to each channel on the entire map uniformly.

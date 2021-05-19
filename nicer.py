@@ -33,16 +33,16 @@ class NICER(nn.Module):
         can.eval()
         can.to(self.device)
 
-        self.finetuned = "fine" in config.IA_checkpoint_path
+        self.finetuned = "fine" in config.IA_fine_checkpoint_path
 
         if self.finetuned:
             # IA2NIMA Judge
             judge = NIMA("scores-one, change_regress")
-            state = torch.load(config.IA_checkpoint_path)['model_state']
+            state = torch.load(config.IA_fine_checkpoint_path)['model_state']
         else:
             # IA Judge
             judge = IA("scores-one, change_regress", True, False, mapping, None, pretrained=True)
-            state = torch.load(config.IA_checkpoint_path)
+            state = torch.load(config.IA_fine_checkpoint_path)
 
         judge.load_state_dict(state)
         judge.eval()

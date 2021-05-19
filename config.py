@@ -8,8 +8,9 @@ interactive_training_sliders = True                # toggle to activate interact
 legacy_loss_NIMA = False                           # switches to NIMA with the original NICER loss function
 MSE_loss_NIMA = False                              # switches to NIMA with the MSE loss used by Judge.
 
-save_animation = False                              # saves animation of the network editing
+save_animation = False                             # saves animation of the network editing
 save_animation_with_extra_info = True              # saves animation of the network editing with extra loss and score values
+save_composite_animation = True                    # saves animation of the network editing with animated graphs
 save_loss_graph = True                             # saves loss graph
 save_score_graph = True                            # saves score graph
 animate_graphs = True                              # saves animated versions of graphs
@@ -36,7 +37,9 @@ supported_extensions_raw = ['dng']                  # legacy, deprecated
 can_filter_count = 8
 can_checkpoint_path = 'models/can8_epoch10_final.pt'
 nima_checkpoint_path = 'models/nima_vgg_bright2.pkl'
-IA_checkpoint_path = 'models/fine-imagenet.pth'
+nima_mobilenet_checkpoint_path = 'models/fine-imagenet.pth'
+IA_pre_checkpoint_path = 'models/pre-one-score-regression.pth'
+IA_fine_checkpoint_path = 'models/fine-imagenet.pth'
 
 desired_distribution = [0.0, 0.0, 0.0, 0.0, 0.0, 0.01, 0.09, 0.15, 0.55, 0.20]
 
