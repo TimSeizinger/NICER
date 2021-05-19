@@ -33,16 +33,16 @@ class NICER(nn.Module):
         can.eval()
         can.to(self.device)
 
-        self.finetuned = "fine" in config.IA_fine_checkpoint_path
+        self.finetuned = "fine" in config.Judge_checkpoint_path
 
         if self.finetuned:
             # IA2NIMA Judge
             judge = NIMA("scores-one, change_regress")
-            state = torch.load(config.IA_fine_checkpoint_path)['model_state']
+            state = torch.load(config.Judge_checkpoint_path)['model_state']
         else:
             # IA Judge
-            judge = IA("scores-one, change_regress", True, False, mapping, None, pretrained=True)
-            state = torch.load(config.IA_fine_checkpoint_path)
+            judge = IA("scores-one, change_regress", True, False, mapping, None, pretrained=False)
+            state = torch.load(config.Judge_checkpoint_path)
 
         judge.load_state_dict(state)
         judge.eval()
@@ -120,6 +120,8 @@ class NICER(nn.Module):
         torch.cuda.synchronize()
 
         print("Judge inference time: " + str(start.elapsed_time(end)))
+        print(judge_distr_of_ratings)
+
 
         start.record()
         nima_distr_of_ratings = self.nima(enhanced_img)  # get nima score distribution -> tensor
@@ -301,7 +303,7 @@ class NICER(nn.Module):
                 if re_init:
                     # new for each image
                     nima_loss = loss_with_l2_regularization(nima_score.cpu(), self.filters.cpu(), gamma=self.gamma)
-                    #nima_losses.append(nima_loss.item())
+                    nima_losses.append(nima_loss.item())
                 else:
                     nima_loss = loss_with_l2_regularization(nima_score.cpu(), self.filters.cpu(),
                                                        initial_filters=user_preset_filters, gamma=self.gamma)
@@ -314,8 +316,12 @@ class NICER(nn.Module):
                 judge_loss = self.loss_func(weighted_mean(judge_score, self.weights, self.length), self.target)
                 judge_losses.append(judge_loss.item())
             else:
-                judge_loss = self.loss_func(judge_score['score'], self.target)
+                #judge_loss = self.loss_func(judge_score['styles_change_strength'], torch.zeros(judge_score['styles_change_strength'].size()[0]).to(self.device))
+                judge_loss = self.loss_func(judge_score['score'], self.target*0)
                 judge_losses.append(judge_loss.item())
+                print(judge_score['styles_change_strength'].size())
+                print(judge_score['styles_change_strength'].size()[0])
+
 
             # weighted mean loss
             #loss = torch.div(self.target - weighted_mean(judge_score, self.weights), self.target)

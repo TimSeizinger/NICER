@@ -372,7 +372,7 @@ class NicerGui:
                 elif config.MSE_loss_NIMA:
                     filepath = 'out/' + filename + '_' "MSE loss NIMA" + '/'
                 else:
-                    filepath = 'out/' + filename + '_' + config.IA_fine_checkpoint_path.split('/')[-1].split('.')[0] + '/'
+                    filepath = 'out/' + filename + '_' + config.Judge_checkpoint_path.split('/')[-1].split('.')[0] + '/'
 
             if not os.path.exists(filepath):
                 os.mkdir(filepath)

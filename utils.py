@@ -221,7 +221,7 @@ def create_title(filename, img, i):
     elif config.MSE_loss_NIMA:
         plt.title("MSE loss NIMA" + " on " + filename + " iteration " + str(i + 1) + " out of " + str(len(img)))
     else:
-        plt.title(config.IA_fine_checkpoint_path.split('/')[-1].split('.')[0] + " on " + filename + " iteration " + str(
+        plt.title(config.Judge_checkpoint_path.split('/')[-1].split('.')[0] + " on " + filename + " iteration " + str(
             i + 1) + " out of " + str(len(img)))
     plt.imshow(img[i])
 
@@ -246,9 +246,9 @@ def get_animated_loss_graph_frames(graph_data: dict, filename, resolution = 150)
     for i in range(length):
         fig = plt.figure(dpi=resolution)
         plt.title(filename + " Losses")
-        plt.plot(graph_data['judge_losses'][:i], label="judge loss", color='b')
+        plt.plot(graph_data['judge_losses'][:i+1], label="IA_pre loss", color='b')
         plt.scatter(i, graph_data['judge_losses'][i], color='b')
-        plt.plot(graph_data['nima_losses'][:i], label="NIMA loss", color='r')
+        plt.plot(graph_data['nima_losses'][:i+1], label="NIMA_VGG16 loss", color='r')
         plt.scatter(i, graph_data['nima_losses'][i], color='r')
         plt.xlabel('iterations')
         plt.ylabel('loss')
@@ -271,9 +271,9 @@ def get_animated_score_graph_frames(graph_data: dict, filename, resolution = 150
     for i in range(length):
         fig = plt.figure(dpi=resolution)
         plt.title(filename + " Scores")
-        plt.plot(graph_data['judge_scores'][:i], label="judge score", color='b')
+        plt.plot(graph_data['judge_scores'][:i+1], label="IA_pre score", color='b')
         plt.scatter(i, graph_data['judge_scores'][i], color='b')
-        plt.plot(graph_data['nima_scores'][:i], label="NIMA score", color='r')
+        plt.plot(graph_data['nima_scores'][:i+1], label="NIMA_VGG16 score", color='r')
         plt.scatter(i, graph_data['nima_scores'][i], color='r')
         plt.xlabel('iterations')
         plt.ylabel('score')
