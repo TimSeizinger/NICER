@@ -5,10 +5,11 @@ preview = True                                     # toggle to true to show prev
 interactive_preview_sliders = True                 # toggle to activate interactive sliders for preview when not training -> slower
 interactive_training_sliders = True                # toggle to activate interactive sliders during training -> slower
 
-legacy_loss_NIMA = False                           # switches to NIMA with the original NICER loss function
-MSE_loss_NIMA = False                              # switches to NIMA with the MSE loss used by Judge.
+# valid assessors: NIMA_VGG16, NIMA_mobilenetv2, IA_pre, IA_fine
+assessor = 'IA_fine'                            # Which assessor network should be used by default
+legacy_NICER_loss_for_NIMA_VGG16 = False
 
-save_animation = False                             # saves animation of the network editing
+save_animation = True                              # saves animation of the network editing
 save_animation_with_extra_info = True              # saves animation of the network editing with extra loss and score values
 save_composite_animation = True                    # saves animation of the network editing with animated graphs
 save_loss_graph = True                             # saves loss graph

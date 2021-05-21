@@ -33,7 +33,7 @@ class NICER(nn.Module):
         can.eval()
         can.to(self.device)
 
-        self.finetuned = "fine" in config.IA_fine_checkpoint_path #TODO Remove this line
+        self.finetuned = "fine" in config.IA_fine_checkpoint_path  # TODO Remove this line
 
         nima_mobilenetv2 = NIMA("scores-one, change_regress")
         nima_mobilenetv2.load_state_dict(torch.load(config.nima_mobilenet_checkpoint_path)['model_state'])
@@ -45,10 +45,10 @@ class NICER(nn.Module):
         nima_vgg16.eval()
         nima_vgg16.to(self.device)
 
-        ia_pre = IA("scores-one, change_regress", True, False, mapping, None, pretrained=True)
+        ia_pre = IA("scores-one, change_regress", True, False, mapping, None, pretrained=False)
         ia_pre.load_state_dict(torch.load(config.IA_pre_checkpoint_path))
         ia_pre.eval()
-        nima_vgg16.to(self.device)
+        ia_pre.to(self.device)
 
         ia_fine = NIMA("scores-one, change_regress")
         ia_fine.load_state_dict(torch.load(config.IA_fine_checkpoint_path)['model_state'])
@@ -110,7 +110,6 @@ class NICER(nn.Module):
         mapped_img = torch.cat((image, filter_tensor.cpu()), dim=0).unsqueeze(dim=0).to(
             self.device)  # concat filters and img
 
-
         start.record()
         enhanced_img = self.can(mapped_img)  # enhance img with CAN
         torch.cuda.synchronize()
@@ -118,7 +117,7 @@ class NICER(nn.Module):
         torch.cuda.synchronize()
         print("CAN inference time: " + str(start.elapsed_time(end)))
 
-        #NIMA_VGG16
+        # NIMA_VGG16, returns NIMA distribution as tensor
         start.record()
         nima_vgg16_distr_of_ratings = self.nima_vgg16(enhanced_img)  # get nima_vgg16 score distribution -> tensor
         torch.cuda.synchronize()
@@ -126,29 +125,26 @@ class NICER(nn.Module):
         torch.cuda.synchronize()
         print("NIMA_VGG16 inference time: " + str(start.elapsed_time(end)))
 
-        #NIMA_mobilenetv2
+        # NIMA_mobilenetv2, returns NIMA distribution as tensor
         start.record()
-        nima_mobilenetv2_distr_of_ratings = self.nima_mobilenetv2(enhanced_img)  # get nima_mobilenetv2 score distribution -> tensor
+        nima_mobilenetv2_distr_of_ratings = self.nima_mobilenetv2(
+            enhanced_img)  # get nima_mobilenetv2 score distribution -> tensor
         torch.cuda.synchronize()
         end.record()
         torch.cuda.synchronize()
         print("NIMA_mobilenetv2 inference time: " + str(start.elapsed_time(end)))
 
-        #TODO For some reason this is broken...
-        '''
-        #IA_pre
+        # IA_pre, returns Dict returns NIMA distribution as tensor
         start.record()
-        ia_pre_rating = self.ia_pre(enhanced_img)  # get ia_pre score -> tensor #TODO is it a tensor?
+        ia_pre_ratings = self.ia_pre(enhanced_img)  # get ia_pre score -> tensor
         torch.cuda.synchronize()
         end.record()
         torch.cuda.synchronize()
         print("IA_pre inference time: " + str(start.elapsed_time(end)))
-        print(type(ia_pre_rating))
-        '''
 
-        #IA_fine
+        # IA_fine, returns NIMA distribution as tensor
         start.record()
-        IA_fine_distr_of_ratings = self.ia_fine(enhanced_img)  # get ia_fine score distribution -> tensor
+        ia_fine_distr_of_ratings = self.ia_fine(enhanced_img)  # get ia_fine score distribution -> tensor
         torch.cuda.synchronize()
         end.record()
         torch.cuda.synchronize()
@@ -156,7 +152,7 @@ class NICER(nn.Module):
 
         self.queue.put('dummy')  # dummy
 
-        return nima_mobilenetv2_distr_of_ratings, enhanced_img, nima_vgg16_distr_of_ratings
+        return enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, ia_fine_distr_of_ratings
 
     def set_filters(self, filter_list):
         # usually called from GUI
@@ -247,10 +243,17 @@ class NICER(nn.Module):
             Returns a re-sized 8bit image as np.array
         """
 
-        judge_scores = []
-        nima_scores = []
-        judge_losses = []
-        nima_losses = []
+        # Scores lists for visualization
+        nima_vgg16_scores = []
+        nima_mobilenetv2_scores = []
+        ia_pre_scores = []
+        ia_fine_scores = []
+
+        # Losses lists for visualization
+        nima_vgg16_losses = []
+        nima_mobilenetv2_losses = []
+        ia_pre_losses = []
+        ia_fine_losses = []
 
         if re_init:
             self.re_init()
@@ -284,71 +287,69 @@ class NICER(nn.Module):
         for i in range(epochs):
             if thread_stopEvent.is_set(): break
 
-
             ## Check if sliders have been manually adjusted during last iteration, if yes apply adjustments (buggy af)
-            #while not self.in_queue.empty():
+            # while not self.in_queue.empty():
             #    self.set_filters(self.in_queue.get())
 
             print_msg("Iteration {} of {}".format(i, epochs), 2)
 
             self.optimizer.zero_grad()
 
-
             if fixFilters:
-                judge_score, enhanced_img, nima_score = self.forward(image_tensor_transformed, fixedFilters=initial_filter_values)
+                enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, \
+                ia_fine_distr_of_ratings = self.forward(image_tensor_transformed, fixedFilters=initial_filter_values)
             else:
-                judge_score, enhanced_img, nima_score = self.forward(image_tensor_transformed)
+                enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, \
+                ia_fine_distr_of_ratings = self.forward(image_tensor_transformed)
 
-            if self.finetuned:
-                judge_scores.append(weighted_mean(judge_score, self.weights, self.length).item())
-            else:
-                judge_scores.append(judge_score['score'].item())
+            # Append each score value to their respective list for later visualization
+            nima_vgg16_scores.append(weighted_mean(nima_vgg16_distr_of_ratings, self.weights, self.length).item())
+            nima_mobilenetv2_scores.append(
+                weighted_mean(nima_mobilenetv2_distr_of_ratings, self.weights, self.length).item())
+            ia_pre_scores.append(ia_pre_ratings['score'].item())
+            ia_fine_scores.append(weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length).item())
 
-            nima_scores.append(weighted_mean(nima_score, self.weights, self.length).item())
-
-            #print("Loss before MSE: ")
-            #print(nonmseloss)
-
-            #Direct
-            #loss = nonmseloss['judge_score']
-
-            #Invert
-            #loss = torch.tensor(1.0) - score_dict['judge_score']
-
-            #dumb mean MSE loss
-            #loss = self.loss_func(torch.mean(judge_score), torch.tensor(10.0).to(self.device))
-
-            # weighted mean MSE loss, probably too high?
-            # loss = self.loss_func(weighted_mean(judge_score, self.weights), torch.tensor(10.0).to(self.device))
-
-            #weighted mean MSE loss, notmalized between 0 and 1
-            if config.legacy_loss_NIMA:
+            # NIMA_VGG16 loss, either using MSE or l2 loss with target distribution (legacy_NICER_loss_for_NIMA_VGG16)
+            if config.legacy_NICER_loss_for_NIMA_VGG16:
                 if re_init:
                     # new for each image
-                    nima_loss = loss_with_l2_regularization(nima_score.cpu(), self.filters.cpu(), gamma=self.gamma)
-                    #nima_losses.append(nima_loss.item())
+                    nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(), self.filters.cpu(),
+                                                                  gamma=self.gamma)
                 else:
-                    nima_loss = loss_with_l2_regularization(nima_score.cpu(), self.filters.cpu(),
-                                                       initial_filters=user_preset_filters, gamma=self.gamma)
-                    nima_losses.append(nima_loss.item())
+                    nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(), self.filters.cpu(),
+                                                                  initial_filters=user_preset_filters, gamma=self.gamma)
             else:
-                nima_loss = self.loss_func(weighted_mean(nima_score, self.weights, self.length), self.target)
-                nima_losses.append(nima_loss.item())
+                nima_vgg16_loss = self.loss_func(weighted_mean(nima_vgg16_distr_of_ratings, self.weights, self.length),
+                                                 self.target)
 
-            if self.finetuned:
-                judge_loss = self.loss_func(weighted_mean(judge_score, self.weights, self.length), self.target)
-                judge_losses.append(judge_loss.item())
+            # NIMA_mobilenetv2 loss
+            nima_mobilenetv2_loss = self.loss_func(
+                weighted_mean(nima_mobilenetv2_distr_of_ratings, self.weights, self.length), self.target)
+
+            # IA_pre loss, either reducing score to 0 or reducing the predicted styles_change_strength to 0 #TODO make a switch
+            ia_pre_loss = self.loss_func(ia_pre_ratings['score'], self.target * 0)
+            # ia_pre_loss = self.loss_func(ia_pre_ratings['styles_change_strength'],
+            #                           torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]).to(self.device))
+
+            # IA_fine loss
+            ia_fine_loss = self.loss_func(weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length), self.target)
+
+            # Append each loss value to their respective list for later visualization
+            nima_vgg16_losses.append(nima_vgg16_loss.item())
+            nima_mobilenetv2_losses.append(nima_mobilenetv2_loss.item())
+            ia_pre_losses.append(ia_pre_loss.item())
+            ia_fine_losses.append(ia_fine_loss.item())
+
+            if config.assessor == 'NIMA_VGG16':
+                loss = nima_vgg16_loss
+            elif config.assessor == 'NIMA_mobilenetv2':
+                loss = nima_mobilenetv2_loss
+            elif config.assessor == 'IA_pre':
+                loss = ia_pre_loss
+            elif config.assessor == 'IA_fine':
+                loss = ia_fine_loss
             else:
-                judge_loss = self.loss_func(judge_score['score'], self.target)
-                judge_losses.append(judge_loss.item())
-
-            # weighted mean loss
-            #loss = torch.div(self.target - weighted_mean(judge_score, self.weights), self.target)
-
-            if config.MSE_loss_NIMA or config.legacy_loss_NIMA:
-                loss = nima_loss
-            else:
-                loss = judge_loss
+                raise Exception("Invalid Assessor in config.assessor: " + config.assessor)
 
             loss.backward()
             self.optimizer.step()
@@ -388,8 +389,10 @@ class NICER(nn.Module):
             enhanced_clipped = np.clip(enhanced_img, 0.0, 1.0) * 255.0
             enhanced_clipped = enhanced_clipped.astype('uint8')
 
-            graph_data = {'judge_losses': judge_losses, 'nima_losses': nima_losses, 'judge_scores': judge_scores,
-                          'nima_scores': nima_scores}
+            graph_data = {'nima_vgg16_scores': nima_vgg16_scores, 'nima_vgg16_losses': nima_vgg16_losses,
+                          'nima_mobilenetv2_scores': nima_mobilenetv2_scores, 'nima_mobilenetv2_losses': nima_mobilenetv2_losses,
+                          'ia_pre_scores': ia_pre_scores, 'ia_pre_losses': ia_pre_losses,
+                          'ia_fine_losses': ia_fine_losses, 'ia_fine_scores': ia_fine_scores}
             self.queue.put(graph_data)
 
             self.queue.put(enhanced_clipped)

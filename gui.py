@@ -15,7 +15,8 @@ import config
 from autobright import normalize_brightness
 from neural_models import CAN
 from nicer import NICER, print_msg
-from utils import make_animation, make_animation_with_extra_info, make_graphs, make_graph_animations, make_full_info_animation
+from visualization import make_animation, make_animation_with_extra_info, make_graphs, make_graph_animations, \
+    make_full_info_animation
 
 running = True
 
@@ -364,32 +365,36 @@ class NicerGui:
                 filename = filepath.split('/')[-1]
                 filepath += '/'
             else:
+                # Quick and automatic export of images depending on input and assessor network used
                 if not os.path.exists('out/'):
                     os.mkdir('out/')
                 filename = self.img_namestring.split('/')[-1]
-                if config.legacy_loss_NIMA:
-                    filepath = 'out/' + filename + '_' + "NICER loss NIMA" + '/'
-                elif config.MSE_loss_NIMA:
-                    filepath = 'out/' + filename + '_' "MSE loss NIMA" + '/'
-                else:
-                    filepath = 'out/' + filename + '_' + config.IA_fine_checkpoint_path.split('/')[-1].split('.')[0] + '/'
+                filepath = 'out/' + filename + '/'
+                if not os.path.exists(filepath):
+                    os.mkdir(filepath)
+                filepath += config.assessor
+                if config.assessor == 'NIMA_VGG16':
+                    if config.legacy_NICER_loss_for_NIMA_VGG16:
+                        filepath += '_NICER_loss'
+                    else:
+                        filepath += '_MSE_loss'
+                filepath += '/'
+                filename = filename + '_' + filepath.split('/')[2]
 
             if not os.path.exists(filepath):
                 os.mkdir(filepath)
 
-
-
             if config.save_animation:
                 make_animation(self.images, filepath, filename)
+
+            if self.graph_data is not None and (config.save_score_graph or config.save_loss_graph):
+                make_graphs(self.graph_data, filepath, filename)
 
             if self.graph_data is not None and config.animate_graphs:
                 make_graph_animations(self.graph_data, filepath, filename)
 
             if self.graph_data is not None and config.save_animation_with_extra_info:
                 make_animation_with_extra_info(self.images, self.graph_data, filepath, filename)
-
-            if self.graph_data is not None and (config.save_score_graph or config.save_loss_graph):
-                make_graphs(self.graph_data, filepath, filename)
 
             if self.graph_data is not None and config.save_composite_animation:
                 make_full_info_animation(self.images, self.graph_data, filepath, filename, resolution=200)
