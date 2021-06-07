@@ -6,8 +6,8 @@ interactive_preview_sliders = True                 # toggle to activate interact
 interactive_training_sliders = True                # toggle to activate interactive sliders during training -> slower
 
 # valid assessors: NIMA_VGG16, NIMA_mobilenetv2, IA_pre, IA_fine
-assessor = 'IA_fine'                            # Which assessor network should be used by default
-legacy_NICER_loss_for_NIMA_VGG16 = False
+assessor = 'IA_pre'                            # Which assessor network should be used by default
+legacy_NICER_loss_for_NIMA_VGG16 = True
 
 save_animation = True                              # saves animation of the network editing
 save_animation_with_extra_info = True              # saves animation of the network editing with extra loss and score values

@@ -149,6 +149,24 @@ def loss_with_l2_regularization(nima_result, filters, gamma=config.gamma, initia
 
     return distance_term + gamma * l2_term
 
+def loss_with_filter_regularization(rating, target, loss_func, filters, gamma=config.gamma, initial_filters=None):
+    if initial_filters is not None:
+        if len(filters) != len(initial_filters): error_callback('filter_length_l2loss')
+
+    distance_term = loss_func(rating, target)
+
+    if initial_filters is not None:
+        filter_deviations_from_initial = sum([(filters[x].item() - initial_filters[x]) ** 2 for x in
+                                              range(len(filters))])  # l2: sum the deviation from user preset
+        l2_term = filter_deviations_from_initial
+        print_msg("\nInitial Filters: {}".format(initial_filters), 3)
+        print_msg("Current Filters: {}".format([filters[x].item() for x in range(8)]), 3)
+        print_msg("Deviation from Initial: {}".format(filter_deviations_from_initial), 3)
+        print_msg("L2 Term: {}".format(l2_term), 3)
+    else:
+        l2_term = sum([fil ** 2 for fil in filters])  # l2: sum the squares of all filters
+
+    return distance_term + gamma * l2_term
 
 def weighted_mean(inputs: torch.Tensor, weights, length):
     return torch.div(torch.sum(weights * inputs), length)

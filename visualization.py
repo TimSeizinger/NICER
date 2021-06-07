@@ -31,7 +31,7 @@ def make_animation_with_extra_info(img, graph_data: dict, path, filename, export
             plt.figtext(0.125, 0.035, "Score: " + " {:.4f}".format((graph_data['nima_mobilenetv2_scores'][i] * 10)))
             plt.figtext(0.6, 0.035, "Loss: " + " {:.4f}".format(graph_data['nima_mobilenetv2_losses'][i]))
         elif config.assessor == 'IA_pre':
-            plt.figtext(0.125, 0.035, "Score: " + " {:.4f}".format((graph_data['ia_pre_scores'][i] * 10)))
+            plt.figtext(0.125, 0.035, "Score: " + " {:.4f}".format((graph_data['ia_pre_scores'][i])))
             plt.figtext(0.6, 0.035, "Loss: " + " {:.4f}".format(graph_data['ia_pre_losses'][i]))
         elif config.assessor == 'IA_fine':
             plt.figtext(0.125, 0.035, "Score: " + " {:.4f}".format((graph_data['nima_mobilenetv2_scores'][i] * 10)))

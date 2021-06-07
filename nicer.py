@@ -11,7 +11,7 @@ from torchvision.transforms import transforms
 import config
 from autobright import normalize_brightness
 from neural_models import error_callback, CAN, NIMA_VGG
-from utils import nima_transform, print_msg, loss_with_l2_regularization, weighted_mean
+from utils import nima_transform, print_msg, loss_with_l2_regularization, loss_with_filter_regularization, weighted_mean
 
 from IA_folder.old.utils import mapping
 from IA_folder.IA import IA
@@ -92,8 +92,10 @@ class NICER(nn.Module):
         torch.cuda.synchronize()
 
         # for benchmarking
+        '''
         start = torch.cuda.Event(enable_timing=True)
         end = torch.cuda.Event(enable_timing=True)
+        '''
 
         filter_tensor = torch.zeros((8, 224, 224), dtype=torch.float32).to(self.device)
 
@@ -110,45 +112,45 @@ class NICER(nn.Module):
         mapped_img = torch.cat((image, filter_tensor.cpu()), dim=0).unsqueeze(dim=0).to(
             self.device)  # concat filters and img
 
-        start.record()
+        #start.record()
         enhanced_img = self.can(mapped_img)  # enhance img with CAN
-        torch.cuda.synchronize()
-        end.record()
-        torch.cuda.synchronize()
-        print("CAN inference time: " + str(start.elapsed_time(end)))
+        #torch.cuda.synchronize()
+        #end.record()
+        #torch.cuda.synchronize()
+        #print("CAN inference time: " + str(start.elapsed_time(end)))
 
         # NIMA_VGG16, returns NIMA distribution as tensor
-        start.record()
+        #start.record()
         nima_vgg16_distr_of_ratings = self.nima_vgg16(enhanced_img)  # get nima_vgg16 score distribution -> tensor
-        torch.cuda.synchronize()
-        end.record()
-        torch.cuda.synchronize()
-        print("NIMA_VGG16 inference time: " + str(start.elapsed_time(end)))
+        #torch.cuda.synchronize()
+        #end.record()
+        #torch.cuda.synchronize()
+        #print("NIMA_VGG16 inference time: " + str(start.elapsed_time(end)))
 
         # NIMA_mobilenetv2, returns NIMA distribution as tensor
-        start.record()
+        #start.record()
         nima_mobilenetv2_distr_of_ratings = self.nima_mobilenetv2(
             enhanced_img)  # get nima_mobilenetv2 score distribution -> tensor
-        torch.cuda.synchronize()
-        end.record()
-        torch.cuda.synchronize()
-        print("NIMA_mobilenetv2 inference time: " + str(start.elapsed_time(end)))
+        #torch.cuda.synchronize()
+        #end.record()
+        #torch.cuda.synchronize()
+        #print("NIMA_mobilenetv2 inference time: " + str(start.elapsed_time(end)))
 
         # IA_pre, returns Dict returns NIMA distribution as tensor
-        start.record()
+        #start.record()
         ia_pre_ratings = self.ia_pre(enhanced_img)  # get ia_pre score -> tensor
-        torch.cuda.synchronize()
-        end.record()
-        torch.cuda.synchronize()
-        print("IA_pre inference time: " + str(start.elapsed_time(end)))
+        #torch.cuda.synchronize()
+        #end.record()
+        #torch.cuda.synchronize()
+        #print("IA_pre inference time: " + str(start.elapsed_time(end)))
 
         # IA_fine, returns NIMA distribution as tensor
-        start.record()
+        #start.record()
         ia_fine_distr_of_ratings = self.ia_fine(enhanced_img)  # get ia_fine score distribution -> tensor
-        torch.cuda.synchronize()
-        end.record()
-        torch.cuda.synchronize()
-        print("IA_fine inference time: " + str(start.elapsed_time(end)))
+        #torch.cuda.synchronize()
+        #end.record()
+        #torch.cuda.synchronize()
+        #print("IA_fine inference time: " + str(start.elapsed_time(end)))
 
         self.queue.put('dummy')  # dummy
 
@@ -327,7 +329,14 @@ class NICER(nn.Module):
                 weighted_mean(nima_mobilenetv2_distr_of_ratings, self.weights, self.length), self.target)
 
             # IA_pre loss, either reducing score to 0 or reducing the predicted styles_change_strength to 0 #TODO make a switch
-            ia_pre_loss = self.loss_func(ia_pre_ratings['score'], self.target * 0)
+            if re_init:
+                ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target, self.loss_func.cpu(), self.filters.cpu(), gamma=self.gamma)
+            else:
+                ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target,
+                                                              self.loss_func.cpu(), self.filters.cpu(),
+                                                              initial_filters=user_preset_filters, gamma=self.gamma)
+            print(ia_pre_ratings['styles_change_strength'])
+            # ia_pre_loss = self.loss_func(ia_pre_ratings['score'], self.target)
             # ia_pre_loss = self.loss_func(ia_pre_ratings['styles_change_strength'],
             #                           torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]).to(self.device))
 
