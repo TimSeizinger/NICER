@@ -38,6 +38,10 @@ nima_transform = transforms.Compose([
     transforms.ToTensor()
 ])
 
+jans_transform = transforms.Compose([
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
 hd_transform = transforms.Compose([  # used before saving the final image, to avoid out of memory errors
     transforms.Resize(config.final_size),  # smaller edge will be matched to this
     transforms.ToTensor()

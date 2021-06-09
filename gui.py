@@ -385,19 +385,29 @@ class NicerGui:
                 os.mkdir(filepath)
 
             if config.save_animation:
-                make_animation(self.images, filepath, filename)
+                animation_thread = threading.Thread(target=make_animation, args=(self.images, filepath, filename), daemon=True)
+                animation_thread.start()
+                #make_animation(self.images, filepath, filename)
 
             if self.graph_data is not None and (config.save_score_graph or config.save_loss_graph):
                 make_graphs(self.graph_data, filepath, filename)
 
             if self.graph_data is not None and config.animate_graphs:
+                animation_graph_thread = threading.Thread(target=make_graph_animations, args=(self.graph_data, filepath, filename),
+                                                    daemon=True)
+                animation_graph_thread.start()
                 make_graph_animations(self.graph_data, filepath, filename)
 
             if self.graph_data is not None and config.save_animation_with_extra_info:
-                make_animation_with_extra_info(self.images, self.graph_data, filepath, filename)
+                animation_wei_thread = threading.Thread(target=make_animation_with_extra_info, args=(self.images, self.graph_data, filepath, filename), daemon=True)
+                animation_wei_thread.start()
+                #make_animation_with_extra_info(self.images, self.graph_data, filepath, filename)
 
             if self.graph_data is not None and config.save_composite_animation:
-                make_full_info_animation(self.images, self.graph_data, filepath, filename, resolution=200)
+                animation_c_thread = threading.Thread(target=make_full_info_animation, args=(self.images, self.graph_data, filepath, filename),
+                                                      kwargs={'resolution': 200}, daemon=True)
+                animation_c_thread.start()
+                #make_full_info_animation(self.images, self.graph_data, filepath, filename, resolution=200)
 
             filepath += filename + '.jpg'
 

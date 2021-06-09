@@ -114,6 +114,7 @@ class NICER(nn.Module):
 
         #start.record()
         enhanced_img = self.can(mapped_img)  # enhance img with CAN
+        print(enhanced_img)
         #torch.cuda.synchronize()
         #end.record()
         #torch.cuda.synchronize()
@@ -127,10 +128,13 @@ class NICER(nn.Module):
         #torch.cuda.synchronize()
         #print("NIMA_VGG16 inference time: " + str(start.elapsed_time(end)))
 
+        enhanced_img_jan = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])(enhanced_img)
+        print(enhanced_img_jan)
+
         # NIMA_mobilenetv2, returns NIMA distribution as tensor
         #start.record()
         nima_mobilenetv2_distr_of_ratings = self.nima_mobilenetv2(
-            enhanced_img)  # get nima_mobilenetv2 score distribution -> tensor
+            enhanced_img_jan)  # get nima_mobilenetv2 score distribution -> tensor
         #torch.cuda.synchronize()
         #end.record()
         #torch.cuda.synchronize()
@@ -138,7 +142,7 @@ class NICER(nn.Module):
 
         # IA_pre, returns Dict returns NIMA distribution as tensor
         #start.record()
-        ia_pre_ratings = self.ia_pre(enhanced_img)  # get ia_pre score -> tensor
+        ia_pre_ratings = self.ia_pre(enhanced_img_jan)  # get ia_pre score -> tensor
         #torch.cuda.synchronize()
         #end.record()
         #torch.cuda.synchronize()
@@ -146,7 +150,7 @@ class NICER(nn.Module):
 
         # IA_fine, returns NIMA distribution as tensor
         #start.record()
-        ia_fine_distr_of_ratings = self.ia_fine(enhanced_img)  # get ia_fine score distribution -> tensor
+        ia_fine_distr_of_ratings = self.ia_fine(enhanced_img_jan)  # get ia_fine score distribution -> tensor
         #torch.cuda.synchronize()
         #end.record()
         #torch.cuda.synchronize()
