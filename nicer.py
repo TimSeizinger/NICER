@@ -357,20 +357,42 @@ class NICER(nn.Module):
                     nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(), self.filters.cpu(),
                                                                   initial_filters=user_preset_filters, gamma=self.gamma)
             else:
-                nima_vgg16_loss = self.loss_func(weighted_mean(nima_vgg16_distr_of_ratings, self.weights, self.length),
-                                                 self.target)
+                nima_vgg16_loss = loss_with_filter_regularization(
+                    weighted_mean(nima_vgg16_distr_of_ratings, self.weights, self.length), self.target,
+                    self.loss_func.cpu(), self.filters.cpu(), gamma=self.gamma)
 
             # NIMA_mobilenetv2 loss
             nima_mobilenetv2_loss = self.loss_func(
                 weighted_mean(nima_mobilenetv2_distr_of_ratings, self.weights, self.length), self.target)
 
-            # IA_pre loss, either reducing score to 0 or reducing the predicted styles_change_strength to 0 #TODO make a switch
-            if re_init:
-                ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target, self.loss_func.cpu(), self.filters.cpu(), gamma=self.gamma)
+            # IA_pre loss
+            if config.ia_pre_loss == 'MSE_SCORE_REG':
+                if re_init:
+                    ia_pre_loss = \
+                        loss_with_filter_regularization(ia_pre_ratings['score'], self.target, self.loss_func.cpu(),
+                                                        self.filters.cpu(), gamma=self.gamma)
+                else:
+                    ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target,
+                                                                  self.loss_func.cpu(), self.filters.cpu(),
+                                                                  initial_filters=user_preset_filters, gamma=self.gamma)
+            elif config.ia_pre_loss == 'MSE_STYLE_CHANGES':
+                ia_pre_loss = self.loss_func(ia_pre_ratings['styles_change_strength'],
+                                             torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]).to(self.device))
+            elif config.ia_pre_loss == 'MSE_STYLE_CHANGES_REG':
+                if re_init:
+                    ia_pre_loss = \
+                        loss_with_filter_regularization(ia_pre_ratings['styles_change_strength'].cpu(),
+                                                        torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]),
+                                                        self.loss_func.cpu(), self.filters.cpu(), gamma=self.gamma)
+                else:
+                    ia_pre_loss = \
+                        loss_with_filter_regularization(ia_pre_ratings['styles_change_strength'].cpu(),
+                                                        torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]),
+                                                        self.loss_func.cpu(), self.filters.cpu(),
+                                                        initial_filters=user_preset_filters, gamma=self.gamma)
             else:
-                ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target,
-                                                              self.loss_func.cpu(), self.filters.cpu(),
-                                                              initial_filters=user_preset_filters, gamma=self.gamma)
+                raise Exception('Illegal ia_pre_loss')
+
             print(ia_pre_ratings['styles_change_strength'])
             # ia_pre_loss = self.loss_func(ia_pre_ratings['score'], self.target)
             # ia_pre_loss = self.loss_func(ia_pre_ratings['styles_change_strength'],

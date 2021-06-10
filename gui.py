@@ -195,7 +195,7 @@ class NicerGui:
             self.save_button.place(x=40, y=button_y + 60)
             self.nicer_button.place(x=40 + 105, y=button_y + 20)
             self.stop_button.place(x=40 + 105, y=button_y + 60)
-            #self.preview_button.place(x=40 + 200, y=button_y + 20)
+            self.preview_button.place(x=40 + 200, y=button_y + 20)
             self.reset_button.place(x=40 + 200, y=button_y + 60)
             self.about_button.place(x=40 + 105, y=button_y + 100)
 
@@ -223,11 +223,15 @@ class NicerGui:
             self.optim_lr_label.place(x=20, y=50 + 8 * space)
             self.optim_lr_slider.place(x=150, y=30 + 8 * space)
 
-            assessors = ['NIMA_VGG16', 'NIMA_mobilenetv2', 'IA_pre', 'IA_fine']
             self.selected_IA = StringVar(master)
-            self.selected_IA.set(assessors[0])
-            self.assessor_selection = OptionMenu(master, self.selected_IA, *assessors, command=self.update_assessor)
-            self.assessor_selection.place(x=40 + 200, y=button_y + 20)
+            self.selected_IA.set(config.valid_assesors[0])
+            self.assessor_selection = OptionMenu(master, self.selected_IA, *config.valid_assesors, command=self.update_assessor)
+            self.assessor_selection.place(x=40 + 295, y=button_y + 20)
+
+            self.selected_ia_pre_loss = StringVar(master)
+            self.selected_ia_pre_loss.set(config.valid_ia_pre_losses[0])
+            self.assessor_selection = OptionMenu(master, self.selected_ia_pre_loss, *config.valid_ia_pre_losses, command=self.update_ia_pre_loss)
+            self.assessor_selection.place(x=40 + 295, y=button_y + 60)
 
         # Lists used to generate animations
         if True:
@@ -721,5 +725,10 @@ class NicerGui:
         config.optim_lr = self.optim_lr
         self.nicer.update_optimizer(self.optim_lr)
 
+
     def update_assessor(self, assessor):
         config.assessor = assessor
+
+
+    def update_ia_pre_loss(self, ia_pre_loss):
+        config.ia_pre_loss = ia_pre_loss

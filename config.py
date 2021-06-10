@@ -6,7 +6,13 @@ interactive_preview_sliders = True                 # toggle to activate interact
 interactive_training_sliders = True                # toggle to activate interactive sliders during training -> slower
 
 # valid assessors: NIMA_VGG16, NIMA_mobilenetv2, IA_pre, IA_fine
+valid_assesors = ['NIMA_VGG16', 'NIMA_mobilenetv2', 'IA_pre', 'IA_fine']
 assessor = 'NIMA_VGG16'                            # Which assessor network should be used by default
+
+# valid ia_pre losses: MSE_SCORE_REG, MSE_STYLE_CHANGES #TODO MSE_STYLE_CHANGES_REG, HINGE_STYLE_CHANGES, ADAPTIVE_MSE_SCORE_REG, MOVING_MSE_FILTER_REG, BCE_SCORE_REG
+valid_ia_pre_losses = ['MSE_SCORE_REG', 'MSE_STYLE_CHANGES', 'MSE_STYLE_CHANGES_REG']
+ia_pre_loss = 'MSE_SCORE_REG'                      # Which ia_pre losses should be used by default
+
 legacy_NICER_loss_for_NIMA_VGG16 = True
 
 save_animation = False                              # saves animation of the network editing
@@ -18,7 +24,7 @@ animate_graphs = False                              # saves animated versions of
 
 choose_save_name_and_folder = False                # able to specify image output folder and name
 
-debug_image_pipeline = True
+debug_image_pipeline = False
 
 
 gamma = 0.1
