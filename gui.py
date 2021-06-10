@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import Label, Button, DoubleVar, Scale, HORIZONTAL, filedialog, IntVar, Checkbutton, Canvas
+from tkinter import Label, Button, DoubleVar, Scale, HORIZONTAL, filedialog, IntVar, Checkbutton, Canvas, OptionMenu, StringVar
 from tkinter.ttk import Label, Button
 
 import numpy as np
@@ -175,9 +175,10 @@ class NicerGui:
                 chckbx.place(x=150 + sliderlength + 10, y=30 + idx * space)
 
             self.fixlabel.place(x=360, y=10)
-            gamma_space = 2 * space if space < 60 else 120
+            gamma_space = 1.5 * space #if space < 60 else 120
             self.gamma_label.place(x=20, y=50 + 6 * space + gamma_space)
             self.gamma_slider.place(x=150, y=30 + 6 * space + gamma_space)
+            gamma_space = gamma_space + 0.5 * space
 
         # create buttons and place
         if True:
@@ -194,7 +195,7 @@ class NicerGui:
             self.save_button.place(x=40, y=button_y + 60)
             self.nicer_button.place(x=40 + 105, y=button_y + 20)
             self.stop_button.place(x=40 + 105, y=button_y + 60)
-            self.preview_button.place(x=40 + 200, y=button_y + 20)
+            #self.preview_button.place(x=40 + 200, y=button_y + 20)
             self.reset_button.place(x=40 + 200, y=button_y + 60)
             self.about_button.place(x=40 + 105, y=button_y + 100)
 
@@ -211,7 +212,24 @@ class NicerGui:
             self.slider_adj_by_NICER = False
             self.old_slider_vals = self.get_all_photo_slider_values()
 
-        # Used to generate debug gifs
+        # New UI elements
+        if True:
+            self.optim_lr_label = Label(master, text="Learning Rate")
+            self.optim_lr = config.optim_lr
+            self.optim_lr_slider = Scale(master, from_=0.001, to=0.1, length=sliderlength, orient=HORIZONTAL, resolution=0.001,
+                                         var=self.optim_lr, command=self.update_optim_lr)
+            self.optim_lr_slider.set(0.05)
+
+            self.optim_lr_label.place(x=20, y=50 + 8 * space)
+            self.optim_lr_slider.place(x=150, y=30 + 8 * space)
+
+            assessors = ['NIMA_VGG16', 'NIMA_mobilenetv2', 'IA_pre', 'IA_fine']
+            self.selected_IA = StringVar(master)
+            self.selected_IA.set(assessors[0])
+            self.assessor_selection = OptionMenu(master, self.selected_IA, *assessors, command=self.update_assessor)
+            self.assessor_selection.place(x=40 + 200, y=button_y + 20)
+
+        # Lists used to generate animations
         if True:
             self.images = None
             self.graph_data = None
@@ -588,6 +606,8 @@ class NicerGui:
             self.master.after(100, self.periodiccall)
         elif not self.thread.is_alive() and running:  # thread terminated naturally, after optimization
             self.print_label['text'] = "Optimization finished."
+            self.optim_lr_slider.config(state='active', takefocus=0)
+            self.assessor_selection.config(state='active', takefocus=0)
             self.nicer_button.config(state="active")
             self.nicer.queue = queue.Queue()
             self.interactive_sliders = config.interactive_preview_sliders
@@ -596,6 +616,8 @@ class NicerGui:
             self.threadKiller.set()  # thread killed by stop button
             self.thread.join()
             self.print_label['text'] = "Stopped optimization."
+            self.optim_lr_slider.config(state='active', takefocus=0)
+            self.assessor_selection.config(state='active', takefocus=0)
             self.nicer_button.config(state="active")
             self.threadKiller.clear()
             self.nicer.queue = queue.Queue()
@@ -617,6 +639,8 @@ class NicerGui:
             self.images = []
             self.interactive_sliders = False
             print("Interactive Sliders: " + str(self.interactive_sliders))
+
+            self.optim_lr_slider.config(state='disabled', takefocus=0)
 
             self.nicer.re_init()  # reset everything, especially optimizers, for a fresh optimization
 
@@ -691,3 +715,11 @@ class NicerGui:
         elif config.interactive_training_sliders and self.tk_img_panel_one.winfo_ismapped() and not self.slider_adj_by_NICER:
             self.old_slider_vals = self.get_all_photo_slider_values()
             self.nicer.in_queue.put(self.get_all_photo_slider_values())
+
+    def update_optim_lr(self, optim_lr):
+        self.optim_lr = float(optim_lr)
+        config.optim_lr = self.optim_lr
+        self.nicer.update_optimizer(self.optim_lr)
+
+    def update_assessor(self, assessor):
+        config.assessor = assessor

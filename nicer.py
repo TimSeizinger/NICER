@@ -354,17 +354,22 @@ class NICER(nn.Module):
             ia_fine_losses.append(ia_fine_loss.item())
 
             if config.assessor == 'NIMA_VGG16':
+                print('using NIMA_VGG16')
                 loss = nima_vgg16_loss
             elif config.assessor == 'NIMA_mobilenetv2':
+                print('using NIMA_mobilenetv2')
                 loss = nima_mobilenetv2_loss
             elif config.assessor == 'IA_pre':
+                print('using IA_pre')
                 loss = ia_pre_loss
             elif config.assessor == 'IA_fine':
+                print('using IA_fine')
                 loss = ia_fine_loss
             else:
                 raise Exception("Invalid Assessor in config.assessor: " + config.assessor)
 
             loss.backward()
+            print('Learning rate = ' + str(self.get_lr()))
             self.optimizer.step()
 
             filters_for_queue = [self.filters[x].item() for x in range(8)]
@@ -413,3 +418,16 @@ class NICER(nn.Module):
 
             # returns an 8bit image in any case ---
             return enhanced_clipped, None, None
+
+    def update_optimizer(self, optim_lr):
+        print("updated_optimizer to " + str(optim_lr))
+        if config.optim == 'sgd':
+            self.optimizer = torch.optim.SGD(params=[self.filters], lr=optim_lr, momentum=config.optim_momentum)
+        elif config.optim == 'adam':
+            self.optimizer = torch.optim.Adam(params=[self.filters], lr=optim_lr)
+        else:
+            error_callback('optimizer')
+
+    def get_lr(self):
+        for param_group in self.optimizer.param_groups:
+            return param_group['lr']
