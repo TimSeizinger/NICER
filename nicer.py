@@ -11,7 +11,8 @@ from torchvision.transforms import transforms
 import config
 from autobright import normalize_brightness
 from neural_models import error_callback, CAN, NIMA_VGG
-from utils import nima_transform, print_msg, loss_with_l2_regularization, loss_with_filter_regularization, weighted_mean
+from utils import nima_transform, print_msg, loss_with_l2_regularization, loss_with_filter_regularization, \
+    weighted_mean, jans_normalization, jans_transform, jans_padding, tensor_debug
 
 from IA_folder.old.utils import mapping
 from IA_folder.IA import IA
@@ -88,7 +89,7 @@ class NICER(nn.Module):
         else:
             error_callback('optimizer')
 
-    def forward(self, image, fixedFilters=None, new=False):
+    def forward(self, image: torch.Tensor, image_jan: torch.Tensor = None, fixedFilters=None, new=False):
         torch.cuda.synchronize()
 
         # for benchmarking
@@ -109,12 +110,33 @@ class NICER(nn.Module):
             else:
                 filter_tensor[l, :, :] = self.filters.view(-1)[l]
 
-        mapped_img = torch.cat((image, filter_tensor.cpu()), dim=0).unsqueeze(dim=0).to(
-            self.device)  # concat filters and img
+        # construct filtermap for Jan's Assessors
+        print(type(image_jan))
+        filter_tensor_jan = torch.zeros((8, image_jan.shape[1], image_jan.shape[2]), dtype=torch.float32).to(self.device)
 
+        for l in range(8):
+            if fixedFilters:  # filters were fixed in GUI, always use their passed values
+                if fixedFilters[l][0] == 1:
+                    filter_tensor_jan[l, :, :] = fixedFilters[l][1]
+                else:
+                    filter_tensor_jan[l, :, :] = self.filters.view(-1)[l]
+            else:
+                filter_tensor_jan[l, :, :] = self.filters.view(-1)[l]
+
+
+        # concat filters and img
+        mapped_img = torch.cat((image, filter_tensor.cpu()), dim=0).unsqueeze(dim=0).to(self.device)
         #start.record()
         enhanced_img = self.can(mapped_img)  # enhance img with CAN
-        print(enhanced_img)
+
+        #concat filters and img for Jan's assessors
+        mapped_img_jan = torch.cat((image_jan, filter_tensor_jan.cpu()), dim=0).unsqueeze(dim=0).to(self.device)
+        #start.record()
+        enhanced_img_jan = self.can(mapped_img_jan)  # enhance img with CAN
+
+        tensor_debug(enhanced_img, 'enhanced image')
+        tensor_debug(enhanced_img_jan, 'enhanced image jan')
+
         #torch.cuda.synchronize()
         #end.record()
         #torch.cuda.synchronize()
@@ -128,13 +150,21 @@ class NICER(nn.Module):
         #torch.cuda.synchronize()
         #print("NIMA_VGG16 inference time: " + str(start.elapsed_time(end)))
 
-        enhanced_img_jan = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])(enhanced_img)
-        print(enhanced_img_jan)
+        enhanced_img_jan_clip = torch.clip(enhanced_img_jan, 0, 1)
 
+        tensor_debug(enhanced_img_jan_clip, 'enhanced image jan clipped')
+
+        enhanced_img_jan_normalized = jans_normalization(enhanced_img_jan)
+
+        tensor_debug(enhanced_img_jan_normalized, 'enhanced image jan normalized')
+
+        enhanced_img_jan_padded = jans_padding(enhanced_img_jan_normalized)
+
+        tensor_debug(enhanced_img_jan_padded, 'enhanced image jan padded')
         # NIMA_mobilenetv2, returns NIMA distribution as tensor
         #start.record()
         nima_mobilenetv2_distr_of_ratings = self.nima_mobilenetv2(
-            enhanced_img_jan)  # get nima_mobilenetv2 score distribution -> tensor
+            enhanced_img_jan_normalized)  # get nima_mobilenetv2 score distribution -> tensor
         #torch.cuda.synchronize()
         #end.record()
         #torch.cuda.synchronize()
@@ -142,7 +172,7 @@ class NICER(nn.Module):
 
         # IA_pre, returns Dict returns NIMA distribution as tensor
         #start.record()
-        ia_pre_ratings = self.ia_pre(enhanced_img_jan)  # get ia_pre score -> tensor
+        ia_pre_ratings = self.ia_pre(enhanced_img_jan_normalized)  # get ia_pre score -> tensor
         #torch.cuda.synchronize()
         #end.record()
         #torch.cuda.synchronize()
@@ -150,7 +180,7 @@ class NICER(nn.Module):
 
         # IA_fine, returns NIMA distribution as tensor
         #start.record()
-        ia_fine_distr_of_ratings = self.ia_fine(enhanced_img_jan)  # get ia_fine score distribution -> tensor
+        ia_fine_distr_of_ratings = self.ia_fine(enhanced_img_jan_normalized)  # get ia_fine score distribution -> tensor
         #torch.cuda.synchronize()
         #end.record()
         #torch.cuda.synchronize()
@@ -278,6 +308,8 @@ class NICER(nn.Module):
 
         image_tensor_transformed = nima_transform(pil_image)
 
+        image_tensor_transformed_jan = jans_transform(pil_image)
+
         if fixFilters:  # fixFilters is bool list of filters to be fixed
             initial_filter_values = []
             for k in range(8):
@@ -303,10 +335,10 @@ class NICER(nn.Module):
 
             if fixFilters:
                 enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, \
-                ia_fine_distr_of_ratings = self.forward(image_tensor_transformed, fixedFilters=initial_filter_values)
+                ia_fine_distr_of_ratings = self.forward(image_tensor_transformed, image_tensor_transformed_jan, fixedFilters=initial_filter_values)
             else:
                 enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, \
-                ia_fine_distr_of_ratings = self.forward(image_tensor_transformed)
+                ia_fine_distr_of_ratings = self.forward(image_tensor_transformed, image_tensor_transformed_jan)
 
             # Append each score value to their respective list for later visualization
             nima_vgg16_scores.append(weighted_mean(nima_vgg16_distr_of_ratings, self.weights, self.length).item())

@@ -9,6 +9,7 @@ import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import cv2
+from torch.nn.functional import pad
 
 from PIL import Image
 from skimage.transform import resize
@@ -38,7 +39,42 @@ nima_transform = transforms.Compose([
     transforms.ToTensor()
 ])
 
-jans_transform = transforms.Compose([
+def jans_transform(image):
+    w, h = image.size
+    if w > h:
+        dim1 = int(h/w*224)
+        if dim1 % 2 != 0:
+            dim1 += 1
+        transform = transforms.Compose([
+            transforms.Resize((dim1, 224)),
+            transforms.ToTensor()
+        ])
+    else:
+        dim2 = int(w / h * 224)
+        if dim2 % 2 != 0:
+            dim2 += 1
+        transform = transforms.Compose([
+            transforms.Resize((224, dim2)),
+            transforms.ToTensor()
+        ])
+    return transform(image)
+
+# pads a tensor to a square, ensure that all image dimensions are dividable by 2!!!
+def jans_padding(image: torch.Tensor):
+    if image.shape[2] == image.shape[3]:
+        return image
+    elif image.shape[2] < image.shape[3]:
+        missing = image.shape[3] - image.shape[2]
+        padding = int(missing/2)
+        image = pad(image, (0, 0, padding, padding), "constant", 0)
+        return image
+    else:
+        missing = image.shape[2] - image.shape[3]
+        padding = int(missing / 2)
+        image = pad(image, (padding, padding), "constant", 0)
+        return image
+
+jans_normalization = transforms.Compose([
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
@@ -134,6 +170,7 @@ def single_emd_loss(p, q, r=2):
 
 
 def loss_with_l2_regularization(nima_result, filters, gamma=config.gamma, initial_filters=None):
+    print('loss_with_l2_regularization gamma: ' + str(gamma))
     if initial_filters is not None:
         if len(filters) != len(initial_filters): error_callback('filter_length_l2loss')
 
@@ -153,7 +190,9 @@ def loss_with_l2_regularization(nima_result, filters, gamma=config.gamma, initia
 
     return distance_term + gamma * l2_term
 
+
 def loss_with_filter_regularization(rating, target, loss_func, filters, gamma=config.gamma, initial_filters=None):
+    print('loss_with_filter_regularization gamma: ' + str(gamma))
     if initial_filters is not None:
         if len(filters) != len(initial_filters): error_callback('filter_length_l2loss')
 
@@ -172,5 +211,18 @@ def loss_with_filter_regularization(rating, target, loss_func, filters, gamma=co
 
     return distance_term + gamma * l2_term
 
+
 def weighted_mean(inputs: torch.Tensor, weights, length):
     return torch.div(torch.sum(weights * inputs), length)
+
+
+def tensor_debug(image: torch.Tensor, string):
+    if config.debug_image_pipeline:
+        print(string)
+        print(image.size())
+        print('Max: ' + str(torch.max(image)))
+        print('Min: ' + str(torch.min(image)))
+        im = image.cpu()
+        im = im.squeeze()
+        im = transforms.ToPILImage()(im)
+        im.show(title=string)

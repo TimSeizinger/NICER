@@ -4,7 +4,7 @@ import random
 import pandas as pd
 
 from dataset import AVA
-from utils import nima_transform, jans_transform, weighted_mean
+from utils import nima_transform, jans_normalization, weighted_mean
 from nicer import NICER
 
 pwd = os.getcwd()
@@ -37,7 +37,7 @@ for i in range(100):
     #bright_normalized_img = normalize_brightness(pil_img, input_is_PIL=True)
     #pil_img = Image.fromarray(bright_normalized_img)
     image_tensor_transformed = nima_transform(pil_img)
-    image_tensor_jan = jans_transform(pil_img)
+    image_tensor_jan = jans_normalization(pil_img)
 
     nicer.re_init()
     initial_filter_values = []

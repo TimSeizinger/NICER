@@ -18,6 +18,8 @@ animate_graphs = False                              # saves animated versions of
 
 choose_save_name_and_folder = False                # able to specify image output folder and name
 
+debug_image_pipeline = True
+
 
 gamma = 0.1
 epochs = 50
