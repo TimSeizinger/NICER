@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import cv2
 from torch.nn.functional import pad
+from statistics import mean, stdev
 
 from PIL import Image
 from skimage.transform import resize
@@ -170,7 +171,7 @@ def single_emd_loss(p, q, r=2):
 
 
 def loss_with_l2_regularization(nima_result, filters, gamma=config.gamma, initial_filters=None):
-    print('loss_with_l2_regularization gamma: ' + str(gamma))
+    #print('loss_with_l2_regularization gamma: ' + str(gamma))
     if initial_filters is not None:
         if len(filters) != len(initial_filters): error_callback('filter_length_l2loss')
 
@@ -226,3 +227,23 @@ def tensor_debug(image: torch.Tensor, string):
         im = im.squeeze()
         im = transforms.ToPILImage()(im)
         im.show(title=string)
+
+class RingBuffer:
+    def __init__(self, size: int):
+        self.data = [0.0 for i in range(size)]
+
+    def append(self, x: float):
+        self.data.pop(0)
+        self.data.append(x)
+
+    def get_mean(self):
+        if 0.0 in self.data:
+            return None
+        else:
+            return mean(self.data)
+
+    def get_std_dev(self):
+        if 0.0 in self.data:
+            return None
+        else:
+            return stdev(self.data)

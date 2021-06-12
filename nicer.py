@@ -12,7 +12,7 @@ import config
 from autobright import normalize_brightness
 from neural_models import error_callback, CAN, NIMA_VGG
 from utils import nima_transform, print_msg, loss_with_l2_regularization, loss_with_filter_regularization, \
-    weighted_mean, jans_normalization, jans_transform, jans_padding, tensor_debug
+    weighted_mean, jans_normalization, jans_transform, jans_padding, tensor_debug, RingBuffer
 
 from IA_folder.old.utils import mapping
 from IA_folder.IA import IA
@@ -75,9 +75,12 @@ class NICER(nn.Module):
         self.ia_pre = ia_pre
         self.ia_fine = ia_fine
 
-        self.loss_func = nn.MSELoss('mean').to(self.device)
+        self.loss_func_mse = nn.MSELoss('mean').to(self.device)
+        self.loss_func_bce = nn.BCELoss(reduction='mean').to(self.device)
+        self.loss_func_hinge = nn.MarginRankingLoss() #TODO: Read documentation for this function.
         self.weights = torch.tensor([[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]]).to(self.device)
-        self.target = torch.tensor(1.0).to(self.device)
+
+        self.target = torch.FloatTensor([[1.0]]).to(self.device)
         self.length = torch.tensor(10.0).to(self.device)
 
         self.gamma = config.gamma
@@ -318,12 +321,18 @@ class NICER(nn.Module):
                 else:
                     initial_filter_values.append([0, self.filters[k].item()])
 
+        loss_buffer = RingBuffer(4)
+        score_target = None
+
         # optimize image:
         print_msg("Starting optimization", 2)
         start_time = time.time()
 
         for i in range(epochs):
             if thread_stopEvent.is_set(): break
+
+            if config.automatic_epoch and loss_buffer.get_std_dev() is not None:
+                if loss_buffer.get_std_dev() <= config.automatic_epoch_target: break
 
             ## Check if sliders have been manually adjusted during last iteration, if yes apply adjustments (buggy af)
             # while not self.in_queue.empty():
@@ -345,6 +354,7 @@ class NICER(nn.Module):
             nima_mobilenetv2_scores.append(
                 weighted_mean(nima_mobilenetv2_distr_of_ratings, self.weights, self.length).item())
             ia_pre_scores.append(ia_pre_ratings['score'].item())
+            current_score = ia_pre_ratings['score'].item()
             ia_fine_scores.append(weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length).item())
 
             # NIMA_VGG16 loss, either using MSE or l2 loss with target distribution (legacy_NICER_loss_for_NIMA_VGG16)
@@ -359,47 +369,77 @@ class NICER(nn.Module):
             else:
                 nima_vgg16_loss = loss_with_filter_regularization(
                     weighted_mean(nima_vgg16_distr_of_ratings, self.weights, self.length), self.target,
-                    self.loss_func.cpu(), self.filters.cpu(), gamma=self.gamma)
+                    self.loss_func_mse.cpu(), self.filters.cpu(), gamma=self.gamma)
 
             # NIMA_mobilenetv2 loss
-            nima_mobilenetv2_loss = self.loss_func(
+            nima_mobilenetv2_loss = self.loss_func_mse(
                 weighted_mean(nima_mobilenetv2_distr_of_ratings, self.weights, self.length), self.target)
 
             # IA_pre loss
             if config.ia_pre_loss == 'MSE_SCORE_REG':
                 if re_init:
                     ia_pre_loss = \
-                        loss_with_filter_regularization(ia_pre_ratings['score'], self.target, self.loss_func.cpu(),
+                        loss_with_filter_regularization(ia_pre_ratings['score'], self.target, self.loss_func_mse.cpu(),
                                                         self.filters.cpu(), gamma=self.gamma)
                 else:
                     ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target,
-                                                                  self.loss_func.cpu(), self.filters.cpu(),
+                                                                  self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                  initial_filters=user_preset_filters, gamma=self.gamma)
+            elif config.ia_pre_loss == 'ADAPTIVE_MSE_SCORE_REG':
+                if score_target is None:
+                    score_target = min(current_score + 0.3, 1.0)
+                    print('score_target is: ' + str(score_target))
+                    score_target = torch.FloatTensor([[score_target]]).to(self.device)
+                if re_init:
+                    ia_pre_loss = \
+                        loss_with_filter_regularization(ia_pre_ratings['score'], score_target, self.loss_func_mse.cpu(),
+                                                        self.filters.cpu(), gamma=self.gamma)
+                else:
+                    ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                  self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                  initial_filters=user_preset_filters, gamma=self.gamma)
+            elif config.ia_pre_loss == 'MOVING_MSE_SCORE_REG':
+                score_target = min(current_score + 0.2, 1.0)
+                score_target = torch.FloatTensor([[score_target]]).to(self.device)
+                if re_init:
+                    ia_pre_loss = \
+                        loss_with_filter_regularization(ia_pre_ratings['score'], score_target, self.loss_func_mse.cpu(),
+                                                        self.filters.cpu(), gamma=self.gamma)
+                else:
+                    ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                  self.loss_func_mse.cpu(), self.filters.cpu(),
                                                                   initial_filters=user_preset_filters, gamma=self.gamma)
             elif config.ia_pre_loss == 'MSE_STYLE_CHANGES':
-                ia_pre_loss = self.loss_func(ia_pre_ratings['styles_change_strength'],
-                                             torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]).to(self.device))
+                ia_pre_loss = self.loss_func_mse(ia_pre_ratings['styles_change_strength'],
+                                                 torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]).to(self.device))
             elif config.ia_pre_loss == 'MSE_STYLE_CHANGES_REG':
                 if re_init:
                     ia_pre_loss = \
-                        loss_with_filter_regularization(ia_pre_ratings['styles_change_strength'].cpu(),
+                        loss_with_filter_regularization((ia_pre_ratings['styles_change_strength'] * 1.5).cpu(),
                                                         torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]),
-                                                        self.loss_func.cpu(), self.filters.cpu(), gamma=self.gamma)
+                                                        self.loss_func_mse.cpu(), self.filters.cpu(), gamma=self.gamma)
                 else:
                     ia_pre_loss = \
-                        loss_with_filter_regularization(ia_pre_ratings['styles_change_strength'].cpu(),
+                        loss_with_filter_regularization((ia_pre_ratings['styles_change_strength'] * 1.5).cpu(),
                                                         torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]),
-                                                        self.loss_func.cpu(), self.filters.cpu(),
+                                                        self.loss_func_mse.cpu(), self.filters.cpu(),
                                                         initial_filters=user_preset_filters, gamma=self.gamma)
+            elif config.ia_pre_loss == 'BCE_SCORE':
+                ia_pre_loss = self.loss_func_bce(ia_pre_ratings['score'], self.target)
+            elif config.ia_pre_loss == 'BCE_SCORE_REG':
+                if re_init:
+                    ia_pre_loss = \
+                        loss_with_filter_regularization(ia_pre_ratings['score'], self.target, self.loss_func_bce.cpu(),
+                                                        self.filters.cpu(), gamma=self.gamma)
+                else:
+                    ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target,
+                                                                  self.loss_func_bce.cpu(), self.filters.cpu(),
+                                                                  initial_filters=user_preset_filters, gamma=self.gamma)
             else:
                 raise Exception('Illegal ia_pre_loss')
 
-            print(ia_pre_ratings['styles_change_strength'])
-            # ia_pre_loss = self.loss_func(ia_pre_ratings['score'], self.target)
-            # ia_pre_loss = self.loss_func(ia_pre_ratings['styles_change_strength'],
-            #                           torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]).to(self.device))
-
             # IA_fine loss
-            ia_fine_loss = self.loss_func(weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length), self.target)
+            ia_fine_loss = self.loss_func_mse(weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length), self.target)
 
             # Append each loss value to their respective list for later visualization
             nima_vgg16_losses.append(nima_vgg16_loss.item())
@@ -408,19 +448,21 @@ class NICER(nn.Module):
             ia_fine_losses.append(ia_fine_loss.item())
 
             if config.assessor == 'NIMA_VGG16':
-                print('using NIMA_VGG16')
+                print('using NIMA_VGG16 with loss of: ' + str(nima_vgg16_loss))
                 loss = nima_vgg16_loss
             elif config.assessor == 'NIMA_mobilenetv2':
-                print('using NIMA_mobilenetv2')
+                print('using NIMA_mobilenetv2 with loss of: ' + str(nima_mobilenetv2_loss))
                 loss = nima_mobilenetv2_loss
             elif config.assessor == 'IA_pre':
-                print('using IA_pre')
+                print('using IA_pre with loss of: ' + str(ia_pre_loss))
                 loss = ia_pre_loss
             elif config.assessor == 'IA_fine':
-                print('using IA_fine')
+                print('using IA_fine with loss of: ' + str(ia_fine_loss))
                 loss = ia_fine_loss
             else:
                 raise Exception("Invalid Assessor in config.assessor: " + config.assessor)
+
+            loss_buffer.append(loss.item())
 
             loss.backward()
             print('Learning rate = ' + str(self.get_lr()))
@@ -474,7 +516,6 @@ class NICER(nn.Module):
             return enhanced_clipped, None, None
 
     def update_optimizer(self, optim_lr):
-        print("updated_optimizer to " + str(optim_lr))
         if config.optim == 'sgd':
             self.optimizer = torch.optim.SGD(params=[self.filters], lr=optim_lr, momentum=config.optim_momentum)
         elif config.optim == 'adam':

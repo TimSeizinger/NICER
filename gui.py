@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import Label, Button, DoubleVar, Scale, HORIZONTAL, filedialog, IntVar, Checkbutton, Canvas, OptionMenu, StringVar
+from tkinter import Label, Button, DoubleVar, Scale, HORIZONTAL, filedialog, IntVar, Checkbutton, Canvas, OptionMenu, StringVar, BooleanVar
 from tkinter.ttk import Label, Button
 
 import numpy as np
@@ -199,11 +199,11 @@ class NicerGui:
             self.reset_button.place(x=40 + 200, y=button_y + 60)
             self.about_button.place(x=40 + 105, y=button_y + 100)
 
-            self.epoch_label.place(x=40 + 105, y=button_y - 5)
+            self.epoch_label.place(x=40 + 0, y=button_y - 5)
             self.epochVar = IntVar()
             self.epochBox = tk.Entry(master, width=3)
             self.epochBox.insert(-1, '50')
-            self.epochBox.place(x=40 + 160, y=button_y - 5)
+            self.epochBox.place(x=40 + 55, y=button_y - 5)
 
         # check if interactive sliders are on in Config
         if True:
@@ -214,6 +214,7 @@ class NicerGui:
 
         # New UI elements
         if True:
+            # Learning Rate Slider
             self.optim_lr_label = Label(master, text="Learning Rate")
             self.optim_lr = config.optim_lr
             self.optim_lr_slider = Scale(master, from_=0.001, to=0.1, length=sliderlength, orient=HORIZONTAL, resolution=0.001,
@@ -223,16 +224,25 @@ class NicerGui:
             self.optim_lr_label.place(x=20, y=50 + 8 * space)
             self.optim_lr_slider.place(x=150, y=30 + 8 * space)
 
+            # Image Assessor Selector
             self.selected_IA = StringVar(master)
             self.selected_IA.set(config.valid_assesors[0])
             self.assessor_selection = OptionMenu(master, self.selected_IA, *config.valid_assesors, command=self.update_assessor)
             self.assessor_selection.place(x=40 + 295, y=button_y + 20)
 
+            # Loss Function Selector
             self.selected_ia_pre_loss = StringVar(master)
             self.selected_ia_pre_loss.set(config.valid_ia_pre_losses[0])
             self.assessor_selection = OptionMenu(master, self.selected_ia_pre_loss, *config.valid_ia_pre_losses, command=self.update_ia_pre_loss)
             self.assessor_selection.place(x=40 + 295, y=button_y + 60)
 
+            #Auto Epoch checkbox
+            self.epoch_auto = Label(master, text="Automatic Epoch count:")
+            self.epoch_auto.place(x=40 + 105, y=button_y - 5)
+            self.epoch_auto = BooleanVar()
+            self.epoch_auto.set(config.automatic_epoch)
+            self.epoch_auto_checkbox = Checkbutton(master, var=self.epoch_auto, command=self.update_automatic_epoch)
+            self.epoch_auto_checkbox.place(x=40 + 240, y=button_y - 5)
         # Lists used to generate animations
         if True:
             self.images = None
@@ -732,3 +742,6 @@ class NicerGui:
 
     def update_ia_pre_loss(self, ia_pre_loss):
         config.ia_pre_loss = ia_pre_loss
+
+    def update_automatic_epoch(self):
+        config.automatic_epoch = self.epoch_auto.get()

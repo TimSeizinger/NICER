@@ -4,16 +4,21 @@ verbosity = 2                                      # set from 0 (silent) to 3 (m
 preview = True                                     # toggle to true to show preview imgs -> slower
 interactive_preview_sliders = True                 # toggle to activate interactive sliders for preview when not training -> slower
 interactive_training_sliders = True                # toggle to activate interactive sliders during training -> slower
+use_auto_brightness_normalizer = False             # toggle to activate ABN
 
 # valid assessors: NIMA_VGG16, NIMA_mobilenetv2, IA_pre, IA_fine
 valid_assesors = ['NIMA_VGG16', 'NIMA_mobilenetv2', 'IA_pre', 'IA_fine']
 assessor = 'NIMA_VGG16'                            # Which assessor network should be used by default
 
-# valid ia_pre losses: MSE_SCORE_REG, MSE_STYLE_CHANGES #TODO MSE_STYLE_CHANGES_REG, HINGE_STYLE_CHANGES, ADAPTIVE_MSE_SCORE_REG, MOVING_MSE_FILTER_REG, BCE_SCORE_REG
-valid_ia_pre_losses = ['MSE_SCORE_REG', 'MSE_STYLE_CHANGES', 'MSE_STYLE_CHANGES_REG']
+# valid ia_pre losses: MSE_SCORE_REG, BCE_SCORE, BCE_SCORE_REG, MSE_STYLE_CHANGES, MSE_STYLE_CHANGES_REG
+#TODO HINGE_STYLE_CHANGES, ADAPTIVE_MSE_SCORE_REG, ADAPTIVE_MSE_STYLE_CHANGES_REG
+valid_ia_pre_losses = ['MSE_SCORE_REG', 'ADAPTIVE_MSE_SCORE_REG', 'MOVING_MSE_SCORE_REG', 'BCE_SCORE', 'BCE_SCORE_REG', 'MSE_STYLE_CHANGES', 'MSE_STYLE_CHANGES_REG']
 ia_pre_loss = 'MSE_SCORE_REG'                      # Which ia_pre losses should be used by default
 
 legacy_NICER_loss_for_NIMA_VGG16 = True
+
+automatic_epoch = True                             # Automatically stop enhancing image if loss remains unchanged
+automatic_epoch_target = 0.002
 
 save_animation = False                              # saves animation of the network editing
 save_animation_with_extra_info = False              # saves animation of the network editing with extra loss and score values

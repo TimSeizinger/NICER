@@ -1,3 +1,13 @@
+from utils import RingBuffer
+
+rb = RingBuffer(4)
+for i in range(1, 11):
+    rb.append(float(i))
+    print(rb.data)
+    print(rb.get_mean())
+    print(rb.get_std_dev())
+
+'''
 import numpy as np
 from PIL import Image
 from mdfloss import MDFLoss
@@ -53,4 +63,4 @@ print('sat_30_loclap: ', str(loss_func(original, sat_30_loclap).item()))
 print('sat-30+40: ', str(loss_func(original, sat_30_restored).item()))
 
 print('sat-30+40_loclap: ', str(loss_func(original, sat_30_restored_loclap).item()))
-
+'''
