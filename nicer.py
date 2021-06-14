@@ -92,7 +92,7 @@ class NICER(nn.Module):
         else:
             error_callback('optimizer')
 
-    def forward(self, image: torch.Tensor, image_jan: torch.Tensor = None, fixedFilters=None, new=False):
+    def forward(self, image: torch.Tensor, image_jan: torch.Tensor, fixedFilters=None, new=False, headless_mode=False):
         torch.cuda.synchronize()
 
         # for benchmarking
@@ -114,7 +114,6 @@ class NICER(nn.Module):
                 filter_tensor[l, :, :] = self.filters.view(-1)[l]
 
         # construct filtermap for Jan's Assessors
-        print(type(image_jan))
         filter_tensor_jan = torch.zeros((8, image_jan.shape[1], image_jan.shape[2]), dtype=torch.float32).to(self.device)
 
         for l in range(8):
@@ -131,14 +130,22 @@ class NICER(nn.Module):
         mapped_img = torch.cat((image, filter_tensor.cpu()), dim=0).unsqueeze(dim=0).to(self.device)
         #start.record()
         enhanced_img = self.can(mapped_img)  # enhance img with CAN
+        tensor_debug(enhanced_img, 'enhanced image')
 
         #concat filters and img for Jan's assessors
         mapped_img_jan = torch.cat((image_jan, filter_tensor_jan.cpu()), dim=0).unsqueeze(dim=0).to(self.device)
         #start.record()
         enhanced_img_jan = self.can(mapped_img_jan)  # enhance img with CAN
-
-        tensor_debug(enhanced_img, 'enhanced image')
         tensor_debug(enhanced_img_jan, 'enhanced image jan')
+
+        enhanced_img_jan = torch.clip(enhanced_img_jan, 0, 1)
+        tensor_debug(enhanced_img_jan, 'enhanced image jan clipped')
+
+        enhanced_img_jan = jans_normalization(enhanced_img_jan)
+        tensor_debug(enhanced_img_jan, 'enhanced image jan normalized')
+
+        enhanced_img_jan = jans_padding(enhanced_img_jan)
+        tensor_debug(enhanced_img_jan, 'enhanced image jan padded')
 
         #torch.cuda.synchronize()
         #end.record()
@@ -153,21 +160,11 @@ class NICER(nn.Module):
         #torch.cuda.synchronize()
         #print("NIMA_VGG16 inference time: " + str(start.elapsed_time(end)))
 
-        enhanced_img_jan_clip = torch.clip(enhanced_img_jan, 0, 1)
 
-        tensor_debug(enhanced_img_jan_clip, 'enhanced image jan clipped')
-
-        enhanced_img_jan_normalized = jans_normalization(enhanced_img_jan)
-
-        tensor_debug(enhanced_img_jan_normalized, 'enhanced image jan normalized')
-
-        enhanced_img_jan_padded = jans_padding(enhanced_img_jan_normalized)
-
-        tensor_debug(enhanced_img_jan_padded, 'enhanced image jan padded')
         # NIMA_mobilenetv2, returns NIMA distribution as tensor
         #start.record()
         nima_mobilenetv2_distr_of_ratings = self.nima_mobilenetv2(
-            enhanced_img_jan_normalized)  # get nima_mobilenetv2 score distribution -> tensor
+            enhanced_img_jan)  # get nima_mobilenetv2 score distribution -> tensor
         #torch.cuda.synchronize()
         #end.record()
         #torch.cuda.synchronize()
@@ -175,7 +172,7 @@ class NICER(nn.Module):
 
         # IA_pre, returns Dict returns NIMA distribution as tensor
         #start.record()
-        ia_pre_ratings = self.ia_pre(enhanced_img_jan_normalized)  # get ia_pre score -> tensor
+        ia_pre_ratings = self.ia_pre(enhanced_img_jan)  # get ia_pre score -> tensor
         #torch.cuda.synchronize()
         #end.record()
         #torch.cuda.synchronize()
@@ -183,13 +180,14 @@ class NICER(nn.Module):
 
         # IA_fine, returns NIMA distribution as tensor
         #start.record()
-        ia_fine_distr_of_ratings = self.ia_fine(enhanced_img_jan_normalized)  # get ia_fine score distribution -> tensor
+        ia_fine_distr_of_ratings = self.ia_fine(enhanced_img_jan)  # get ia_fine score distribution -> tensor
         #torch.cuda.synchronize()
         #end.record()
         #torch.cuda.synchronize()
         #print("IA_fine inference time: " + str(start.elapsed_time(end)))
 
-        self.queue.put('dummy')  # dummy
+        if not headless_mode:
+            self.queue.put('dummy')  # dummy
 
         return enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, ia_fine_distr_of_ratings
 
@@ -273,7 +271,7 @@ class NICER(nn.Module):
         else:
             error_callback('optimizer')
 
-    def enhance_image(self, image_path, re_init=True, fixFilters=None, epochs=config.epochs, thread_stopEvent=None):
+    def enhance_image(self, image_path, re_init=True, fixFilters=None, epochs=config.epochs, thread_stopEvent=None, headless_mode=False):
         """
             optimization routine that is called to enhance an image.
             Usually this is called from the NICER button in the GUI.
@@ -329,10 +327,15 @@ class NICER(nn.Module):
         start_time = time.time()
 
         for i in range(epochs):
-            if thread_stopEvent.is_set(): break
+            if headless_mode is False and thread_stopEvent.is_set(): break
 
             if config.automatic_epoch and loss_buffer.get_std_dev() is not None:
-                if loss_buffer.get_std_dev() <= config.automatic_epoch_target: break
+                if config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES' or 'MSE_STYLE_CHANGES_REG':
+                    if loss_buffer.get_std_dev() <= config.automatic_epoch_target*4:
+                        break
+                else:
+                    if loss_buffer.get_std_dev() <= config.automatic_epoch_target:
+                        break
 
             ## Check if sliders have been manually adjusted during last iteration, if yes apply adjustments (buggy af)
             # while not self.in_queue.empty():
@@ -344,10 +347,12 @@ class NICER(nn.Module):
 
             if fixFilters:
                 enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, \
-                ia_fine_distr_of_ratings = self.forward(image_tensor_transformed, image_tensor_transformed_jan, fixedFilters=initial_filter_values)
+                ia_fine_distr_of_ratings = self.forward(image_tensor_transformed, image_tensor_transformed_jan,
+                                                        fixedFilters=initial_filter_values, headless_mode=headless_mode)
             else:
                 enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, \
-                ia_fine_distr_of_ratings = self.forward(image_tensor_transformed, image_tensor_transformed_jan)
+                ia_fine_distr_of_ratings = self.forward(image_tensor_transformed, image_tensor_transformed_jan,
+                                                        headless_mode=headless_mode)
 
             # Append each score value to their respective list for later visualization
             nima_vgg16_scores.append(weighted_mean(nima_vgg16_distr_of_ratings, self.weights, self.length).item())
@@ -358,25 +363,22 @@ class NICER(nn.Module):
             ia_fine_scores.append(weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length).item())
 
             # NIMA_VGG16 loss, either using MSE or l2 loss with target distribution (legacy_NICER_loss_for_NIMA_VGG16)
-            if config.legacy_NICER_loss_for_NIMA_VGG16:
-                if re_init:
-                    # new for each image
-                    nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(), self.filters.cpu(),
-                                                                  gamma=self.gamma)
-                else:
-                    nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(), self.filters.cpu(),
-                                                                  initial_filters=user_preset_filters, gamma=self.gamma)
+
+            if re_init:
+                # new for each image
+                nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(), self.filters.cpu(),
+                                                              gamma=self.gamma)
             else:
-                nima_vgg16_loss = loss_with_filter_regularization(
-                    weighted_mean(nima_vgg16_distr_of_ratings, self.weights, self.length), self.target,
-                    self.loss_func_mse.cpu(), self.filters.cpu(), gamma=self.gamma)
+                nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(), self.filters.cpu(),
+                                                              initial_filters=user_preset_filters, gamma=self.gamma)
+
 
             # NIMA_mobilenetv2 loss
             nima_mobilenetv2_loss = self.loss_func_mse(
                 weighted_mean(nima_mobilenetv2_distr_of_ratings, self.weights, self.length), self.target)
 
             # IA_pre loss
-            if config.ia_pre_loss == 'MSE_SCORE_REG':
+            if config.SSMTPIAA_loss == 'MSE_SCORE_REG':
                 if re_init:
                     ia_pre_loss = \
                         loss_with_filter_regularization(ia_pre_ratings['score'], self.target, self.loss_func_mse.cpu(),
@@ -385,7 +387,7 @@ class NICER(nn.Module):
                     ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target,
                                                                   self.loss_func_mse.cpu(), self.filters.cpu(),
                                                                   initial_filters=user_preset_filters, gamma=self.gamma)
-            elif config.ia_pre_loss == 'ADAPTIVE_MSE_SCORE_REG':
+            elif config.SSMTPIAA_loss == 'ADAPTIVE_MSE_SCORE_REG':
                 if score_target is None:
                     score_target = min(current_score + 0.3, 1.0)
                     print('score_target is: ' + str(score_target))
@@ -398,7 +400,7 @@ class NICER(nn.Module):
                     ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
                                                                   self.loss_func_mse.cpu(), self.filters.cpu(),
                                                                   initial_filters=user_preset_filters, gamma=self.gamma)
-            elif config.ia_pre_loss == 'MOVING_MSE_SCORE_REG':
+            elif config.SSMTPIAA_loss == 'MOVING_MSE_SCORE_REG':
                 score_target = min(current_score + 0.2, 1.0)
                 score_target = torch.FloatTensor([[score_target]]).to(self.device)
                 if re_init:
@@ -409,10 +411,10 @@ class NICER(nn.Module):
                     ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
                                                                   self.loss_func_mse.cpu(), self.filters.cpu(),
                                                                   initial_filters=user_preset_filters, gamma=self.gamma)
-            elif config.ia_pre_loss == 'MSE_STYLE_CHANGES':
+            elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES':
                 ia_pre_loss = self.loss_func_mse(ia_pre_ratings['styles_change_strength'],
                                                  torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]).to(self.device))
-            elif config.ia_pre_loss == 'MSE_STYLE_CHANGES_REG':
+            elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_REG':
                 if re_init:
                     ia_pre_loss = \
                         loss_with_filter_regularization((ia_pre_ratings['styles_change_strength'] * 1.5).cpu(),
@@ -424,9 +426,9 @@ class NICER(nn.Module):
                                                         torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]),
                                                         self.loss_func_mse.cpu(), self.filters.cpu(),
                                                         initial_filters=user_preset_filters, gamma=self.gamma)
-            elif config.ia_pre_loss == 'BCE_SCORE':
+            elif config.SSMTPIAA_loss == 'BCE_SCORE':
                 ia_pre_loss = self.loss_func_bce(ia_pre_ratings['score'], self.target)
-            elif config.ia_pre_loss == 'BCE_SCORE_REG':
+            elif config.SSMTPIAA_loss == 'BCE_SCORE_REG':
                 if re_init:
                     ia_pre_loss = \
                         loss_with_filter_regularization(ia_pre_ratings['score'], self.target, self.loss_func_bce.cpu(),
@@ -436,7 +438,7 @@ class NICER(nn.Module):
                                                                   self.loss_func_bce.cpu(), self.filters.cpu(),
                                                                   initial_filters=user_preset_filters, gamma=self.gamma)
             else:
-                raise Exception('Illegal ia_pre_loss')
+                raise Exception('Illegal SSMTPIAA_loss')
 
             # IA_fine loss
             ia_fine_loss = self.loss_func_mse(weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length), self.target)
@@ -453,10 +455,10 @@ class NICER(nn.Module):
             elif config.assessor == 'NIMA_mobilenetv2':
                 print('using NIMA_mobilenetv2 with loss of: ' + str(nima_mobilenetv2_loss))
                 loss = nima_mobilenetv2_loss
-            elif config.assessor == 'IA_pre':
-                print('using IA_pre with loss of: ' + str(ia_pre_loss))
+            elif config.assessor == 'SSMTPIAA':
+                print('using IA_pre with loss of: ' + str(ia_pre_loss.item()) + 'and score of: ' + str(ia_pre_ratings['score'].item()))
                 loss = ia_pre_loss
-            elif config.assessor == 'IA_fine':
+            elif config.assessor == 'SSMTPIAA_fine':
                 print('using IA_fine with loss of: ' + str(ia_fine_loss))
                 loss = ia_fine_loss
             else:
@@ -468,11 +470,12 @@ class NICER(nn.Module):
             print('Learning rate = ' + str(self.get_lr()))
             self.optimizer.step()
 
-            filters_for_queue = [self.filters[x].item() for x in range(8)]
-            self.queue.put(i + 1)
-            self.queue.put(filters_for_queue)
+            if not headless_mode:
+                filters_for_queue = [self.filters[x].item() for x in range(8)]
+                self.queue.put(i + 1)
+                self.queue.put(filters_for_queue)
 
-        if not thread_stopEvent.is_set():
+        if headless_mode is True or not thread_stopEvent.is_set():
             print_msg("Optimization for %d epochs took %.3fs" % (epochs, time.time() - start_time), 2)
 
             # the entire rescale thing is not needed, bc optimization happens on a smaller image (for speed improvement)
@@ -507,13 +510,18 @@ class NICER(nn.Module):
                           'nima_mobilenetv2_scores': nima_mobilenetv2_scores, 'nima_mobilenetv2_losses': nima_mobilenetv2_losses,
                           'ia_pre_scores': ia_pre_scores, 'ia_pre_losses': ia_pre_losses,
                           'ia_fine_losses': ia_fine_losses, 'ia_fine_scores': ia_fine_scores}
-            self.queue.put(graph_data)
 
-            self.queue.put(enhanced_clipped)
-            self.in_queue = queue.Queue()
+            if not headless_mode:
+                self.queue.put(graph_data)
+
+                self.queue.put(enhanced_clipped)
+                self.in_queue = queue.Queue()
 
             # returns an 8bit image in any case ---
-            return enhanced_clipped, None, None
+            if not headless_mode:
+                return enhanced_clipped, None, None
+            else:
+                return enhanced_clipped, graph_data
 
     def update_optimizer(self, optim_lr):
         if config.optim == 'sgd':

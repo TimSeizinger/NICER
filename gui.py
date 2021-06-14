@@ -232,8 +232,8 @@ class NicerGui:
 
             # Loss Function Selector
             self.selected_ia_pre_loss = StringVar(master)
-            self.selected_ia_pre_loss.set(config.valid_ia_pre_losses[0])
-            self.assessor_selection = OptionMenu(master, self.selected_ia_pre_loss, *config.valid_ia_pre_losses, command=self.update_ia_pre_loss)
+            self.selected_ia_pre_loss.set(config.valid_SSMTPIAA_losses[0])
+            self.assessor_selection = OptionMenu(master, self.selected_ia_pre_loss, *config.valid_SSMTPIAA_losses, command=self.update_ia_pre_loss)
             self.assessor_selection.place(x=40 + 295, y=button_y + 60)
 
             #Auto Epoch checkbox
@@ -405,11 +405,6 @@ class NicerGui:
                 if not os.path.exists(filepath):
                     os.mkdir(filepath)
                 filepath += config.assessor
-                if config.assessor == 'NIMA_VGG16':
-                    if config.legacy_NICER_loss_for_NIMA_VGG16:
-                        filepath += '_NICER_loss'
-                    else:
-                        filepath += '_MSE_loss'
                 filepath += '/'
                 filename = filename + '_' + filepath.split('/')[2]
 
@@ -735,13 +730,11 @@ class NicerGui:
         config.optim_lr = self.optim_lr
         self.nicer.update_optimizer(self.optim_lr)
 
-
     def update_assessor(self, assessor):
         config.assessor = assessor
 
-
     def update_ia_pre_loss(self, ia_pre_loss):
-        config.ia_pre_loss = ia_pre_loss
+        config.SSMTPIAA_loss = ia_pre_loss
 
     def update_automatic_epoch(self):
         config.automatic_epoch = self.epoch_auto.get()

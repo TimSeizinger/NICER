@@ -28,7 +28,7 @@ class AVA:
         self.horizontal_flip = horizontal_flip
         self.percentage_of_dataset = percentage_of_dataset
 
-        self.files = pd.read_csv(f"analysis\\{mode}_set.csv")
+        self.files = pd.read_csv(f"analysis\\sets\\{mode}_set.csv")
         if self.percentage_of_dataset is not None:
             self.files = self.files[: int(len(self.files) * (self.percentage_of_dataset / 100))]
 
@@ -68,7 +68,7 @@ class Pexels:
         self.horizontal_flip = horizontal_flip
         self.percentage_of_dataset = percentage_of_dataset
 
-        self.files = pd.read_csv(f"analysis\\{mode}_set.csv")
+        self.files = pd.read_csv(f"analysis\\sets\\{mode}_set.csv")
         if self.percentage_of_dataset is not None:
             self.files = self.files[: int(len(self.files) * (self.percentage_of_dataset / 100))]
 
@@ -85,8 +85,8 @@ class Pexels:
             return self[random.randint(0, len(self))]
 
     def _actualgetitem(self, idx: int):
-        path = self.image_dir + '\\' + str(self.files.iloc[idx][0]) + ".jpg"
-        pil_img = Image.open(path).convert("RGB")
+        path = self.image_dir + '\\' + str(self.files.iloc[idx][0])
+        pil_img: Image = Image.open(path).convert("RGB")
         return {"image_id": self.files.iloc[idx][0], "img": pil_img}
 
 
@@ -105,7 +105,7 @@ class Landscapes:
         self.horizontal_flip = horizontal_flip
         self.percentage_of_dataset = percentage_of_dataset
 
-        self.files = pd.read_csv(f"analysis\\{mode}_set.csv")
+        self.files = pd.read_csv(f"analysis\\sets\\{mode}_set.csv")
         if self.percentage_of_dataset is not None:
             self.files = self.files[: int(len(self.files) * (self.percentage_of_dataset / 100))]
 
@@ -140,7 +140,7 @@ class LandscapesTop:
         self.horizontal_flip = horizontal_flip
         self.percentage_of_dataset = percentage_of_dataset
 
-        self.files = pd.read_csv(f"analysis\\{mode}_set.csv")
+        self.files = pd.read_csv(f"analysis\\sets\\{mode}_set.csv")
         if self.percentage_of_dataset is not None:
             self.files = self.files[: int(len(self.files) * (self.percentage_of_dataset / 100))]
 

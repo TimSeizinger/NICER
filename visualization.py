@@ -30,10 +30,10 @@ def make_animation_with_extra_info(img, graph_data: dict, path, filename, export
         elif config.assessor == 'NIMA_mobilenetv2':
             plt.figtext(0.125, 0.035, "Score: " + " {:.4f}".format((graph_data['nima_mobilenetv2_scores'][i] * 10)))
             plt.figtext(0.6, 0.035, "Loss: " + " {:.4f}".format(graph_data['nima_mobilenetv2_losses'][i]))
-        elif config.assessor == 'IA_pre':
+        elif config.assessor == 'SSMTPIAA':
             plt.figtext(0.125, 0.035, "Score: " + " {:.4f}".format((graph_data['ia_pre_scores'][i])))
             plt.figtext(0.6, 0.035, "Loss: " + " {:.4f}".format(graph_data['ia_pre_losses'][i]))
-        elif config.assessor == 'IA_fine':
+        elif config.assessor == 'SSMTPIAA_fine':
             plt.figtext(0.125, 0.035, "Score: " + " {:.4f}".format((graph_data['nima_mobilenetv2_scores'][i] * 10)))
             plt.figtext(0.6, 0.035, "Loss: " + " {:.4f}".format(graph_data['nima_mobilenetv2_losses'][i]))
         else:
@@ -64,8 +64,8 @@ def make_graphs(graph_data: dict, path, filename):
         plt.title(filename + " Losses")
         plt.plot(graph_data['nima_vgg16_losses'], label='NIMA_VGG16', color='blue')
         plt.plot(graph_data['nima_mobilenetv2_losses'], label='NIMA_mobilenetv2', color='cyan')
-        plt.plot(graph_data['ia_pre_losses'], label='IA_pretrained', color='orange')
-        plt.plot(graph_data['ia_fine_losses'], label='IA_finetuned', color='red')
+        plt.plot(graph_data['ia_pre_losses'], label='SSMTPIAA', color='orange')
+        plt.plot(graph_data['ia_fine_losses'], label='SSMTPIAA_finetuned', color='red')
         plt.xlabel('iterations')
         plt.ylabel('loss')
         plt.legend()
@@ -76,8 +76,8 @@ def make_graphs(graph_data: dict, path, filename):
         plt.title(filename + " Scores")
         plt.plot(graph_data['nima_vgg16_scores'], label='NIMA_VGG16', color='blue')
         plt.plot(graph_data['nima_mobilenetv2_scores'], label='NIMA_mobilenetv2', color='cyan')
-        plt.plot(graph_data['ia_pre_scores'], label='IA_pretrained', color='orange')
-        plt.plot(graph_data['ia_fine_scores'], label='IA_finetuned', color='red')
+        plt.plot(graph_data['ia_pre_scores'], label='SSMTPIAA', color='orange')
+        plt.plot(graph_data['ia_fine_scores'], label='SSMTPIAA_finetuned', color='red')
         plt.xlabel('iterations')
         plt.ylabel('score')
         plt.legend()
@@ -104,11 +104,6 @@ def make_score_animation(graph_data: dict, path, filename):
 
 def create_title(filename, img, i):
     network_title = config.assessor
-    if config.assessor == 'NIMA_VGG16':
-        if config.legacy_NICER_loss_for_NIMA_VGG16:
-            network_title += '_NICER_loss'
-        else:
-            network_title += '_MSE_loss'
     plt.title(network_title + " on " + filename.split('_')[0] + " iteration " + str(i + 1) + " out of " + str(len(img)))
     plt.imshow(img[i])
 
@@ -126,8 +121,8 @@ def get_animated_loss_graph_frames(graph_data: dict, filename, resolution = 150)
     length = len(graph_data['ia_fine_losses'])
     plt.plot(graph_data['nima_vgg16_losses'], label='NIMA_VGG16', color='blue')
     plt.plot(graph_data['nima_mobilenetv2_losses'], label='NIMA_mobilenetv2', color='cyan')
-    plt.plot(graph_data['ia_pre_losses'], label='IA_pretrained', color='orange')
-    plt.plot(graph_data['ia_fine_losses'], label='IA_finetuned', color='red')
+    plt.plot(graph_data['ia_pre_losses'], label='SSMTPIAA', color='orange')
+    plt.plot(graph_data['ia_fine_losses'], label='SSMTPIAA_finetuned', color='red')
     ylim = plt.gca().get_ylim()
     xlim = plt.gca().get_xlim()
     plt.close()
@@ -140,9 +135,9 @@ def get_animated_loss_graph_frames(graph_data: dict, filename, resolution = 150)
         plt.scatter(i, graph_data['nima_vgg16_losses'][i], color='blue')
         plt.plot(graph_data['nima_mobilenetv2_losses'][:i+1], label='NIMA_mobilenetv2', color='cyan')
         plt.scatter(i, graph_data['nima_mobilenetv2_losses'][i], color='cyan')
-        plt.plot(graph_data['ia_pre_losses'][:i+1], label='IA_pretrained', color='orange')
+        plt.plot(graph_data['ia_pre_losses'][:i+1], label='SSMTPIAA', color='orange')
         plt.scatter(i, graph_data['ia_pre_losses'][i], color='orange')
-        plt.plot(graph_data['ia_fine_losses'][:i+1], label='IA_finetuned', color='red')
+        plt.plot(graph_data['ia_fine_losses'][:i+1], label='SSMTPIAA_finetuned', color='red')
         plt.scatter(i, graph_data['ia_fine_losses'][i], color='red')
 
         plt.xlabel('iterations')
@@ -160,8 +155,8 @@ def get_animated_score_graph_frames(graph_data: dict, filename, resolution = 150
     length = len(graph_data['ia_fine_scores'])
     plt.plot(graph_data['nima_vgg16_scores'], label='NIMA_VGG16', color='blue')
     plt.plot(graph_data['nima_mobilenetv2_scores'], label='NIMA_mobilenetv2', color='cyan')
-    plt.plot(graph_data['ia_pre_scores'], label='IA_pretrained', color='orange')
-    plt.plot(graph_data['ia_fine_scores'], label='IA_finetuned', color='red')
+    plt.plot(graph_data['ia_pre_scores'], label='SSMTPIAA', color='orange')
+    plt.plot(graph_data['ia_fine_scores'], label='SSMTPIAA_finetuned', color='red')
     ylim = plt.gca().get_ylim()
     xlim = plt.gca().get_xlim()
     plt.close()
@@ -174,9 +169,9 @@ def get_animated_score_graph_frames(graph_data: dict, filename, resolution = 150
         plt.scatter(i, graph_data['nima_vgg16_scores'][i], color='blue')
         plt.plot(graph_data['nima_mobilenetv2_scores'][:i+1], label='NIMA_mobilenetv2', color='cyan')
         plt.scatter(i, graph_data['nima_mobilenetv2_scores'][i], color='cyan')
-        plt.plot(graph_data['ia_pre_scores'][:i+1], label='IA_pretrained', color='orange')
+        plt.plot(graph_data['ia_pre_scores'][:i+1], label='SSMTPIAA', color='orange')
         plt.scatter(i, graph_data['ia_pre_scores'][i], color='orange')
-        plt.plot(graph_data['ia_fine_scores'][:i+1], label='IA_finetuned', color='red')
+        plt.plot(graph_data['ia_fine_scores'][:i+1], label='SSMTPIAA_finetuned', color='red')
         plt.scatter(i, graph_data['ia_fine_scores'][i], color='red')
 
         plt.xlabel('iterations')
