@@ -1,8 +1,7 @@
-# FROM pytorch/pytorch is also possible, which simply takes the "latest" tag
-FROM pytorch/pytorch:1.3-cuda10.1-cudnn7-runtime
+FROM python:3
 
-RUN conda install pip
-RUN pip install sklearn gensim numpy pandas tqdm
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Run a test if the container has all dependencies
-RUN python -c "import torch, gensim"
+RUN python -c "import imagenet_c, matplotlib, numpy, cv2, pandas, pickleshare, PIL, pytorch_lightning, rawpy, skimage, scipy, tensorboard, tensorboard_plugin_wit, torch, torchvision, tifffile, tqdm, future, jinja2"

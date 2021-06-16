@@ -3,7 +3,6 @@ import math
 import os
 import random
 import subprocess
-import tempfile
 from pathlib import Path
 from struct import pack, unpack
 from typing import Dict, Tuple

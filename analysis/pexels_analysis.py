@@ -1,7 +1,6 @@
 import pandas as pd
 import os
 
-os.chdir(os.path.dirname(os.getcwd()))
 
 pexels_tall = pd.read_csv('./analysis/results/pexels_tall.csv')
 pexels_wide = pd.read_csv('./analysis/results/pexels_wide.csv')

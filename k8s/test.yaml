@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: test-job
+spec:
+  template:
+    spec:
+      priorityClassName: research-med
+      containers:
+        - name: NICER-test
+          image: ls6-stud-registry.informatik.uni-wuerzburg.de/<namespace>-pytorch-test:0.0.1
+          imagePullPolicy: "IfNotPresent"
+          env:
+            - name: TEST
+              value: "hello"
+            - name: MYDIR # example usage of env variable
+              value: "/mydir"
+          resources:
+            limits:
+              nvidia.com/gpu: "1"
+              cpu: "2"
+              memory: "2Gi"
+            requests:
+              nvidia.com/gpu: "1"
+              cpu: "2"
+              memory: "2Gi"
+          command: ["python3", "-c", "print('HewwoWorld')"]
+          volumeMounts:
+            - mountPath: /home/stud/grimmalex # directory IN the container
+              name: localdir # matches volume-name from below
+      imagePullSecrets:
+        - name: lsx-registry
+      restartPolicy: "Never"
+      volumes:
+        - name: localdir
+          cephfs:
+            monitors:
+              - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20  # Not important for you, just copy along
+            user: studgrimmalex  # <namespace>
+            path: "/home/stud/grimmalex" # The path you want to mount
+            secretRef: # The name of the secret for auth. Is always "ceph-secret"
+              name: ceph-secret
