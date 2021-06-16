@@ -8,7 +8,7 @@ spec:
       priorityClassName: research-med
       containers:
         - name: NICER-editing_test
-          image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/NICERenv:0.0.1
+          image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/NICER_env:0.0.1
           imagePullPolicy: "IfNotPresent"
           resources:
             limits:
