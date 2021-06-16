@@ -1,11 +1,20 @@
-from utils import RingBuffer
+#from utils import hinge_loss
+import torch
 
-rb = RingBuffer(4)
-for i in range(1, 11):
-    rb.append(float(i))
-    print(rb.data)
-    print(rb.get_mean())
-    print(rb.get_std_dev())
+tensor = torch.Tensor([0, 0.24, 0.25, 3, 4, 5, 6, 7, 8, 9])
+print(tensor)
+print(tensor.data)
+print(tensor.data[0])
+print(tensor.data[0].item())
+
+for i in range(9):
+    if abs(tensor.data[i].item()) < 0.25:
+        x = 1
+
+tensor[abs(tensor) < 0.25] = 0
+
+print(tensor)
+
 
 '''
 import numpy as np

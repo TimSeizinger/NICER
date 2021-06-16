@@ -3,12 +3,8 @@ from collections.abc import Iterable
 
 import rawpy
 import torch
-import os
 import numpy as np
 import torchvision.transforms as transforms
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import cv2
 from torch.nn.functional import pad
 from statistics import mean, stdev
 
@@ -160,6 +156,11 @@ def get_tensor_from_raw_image(path, size=None):
 
     img_tensor = transforms.ToTensor()(rgb_float_resized)
     return img_tensor
+
+
+def hinge(rating: torch.Tensor, hinge_val: float=0.25):
+    rating[abs(rating) < hinge_val] = 0.0
+    return rating
 
 
 def single_emd_loss(p, q, r=2):

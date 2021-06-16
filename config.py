@@ -6,13 +6,14 @@ interactive_preview_sliders = True                 # toggle to activate interact
 interactive_training_sliders = True                # toggle to activate interactive sliders during training -> slower
 use_auto_brightness_normalizer = False             # toggle to activate ABN
 
-# valid assessors: NIMA_VGG16, NIMA_mobilenetv2, IA_pre, IA_fine
 valid_assesors = ['NIMA_VGG16', 'NIMA_mobilenetv2', 'SSMTPIAA', 'SSMTPIAA_fine']
 assessor = 'SSMTPIAA'                            # Which assessor network should be used by default
 
-# valid ia_pre losses: MSE_SCORE_REG, BCE_SCORE, BCE_SCORE_REG, MSE_STYLE_CHANGES, MSE_STYLE_CHANGES_REG
-#TODO HINGE_STYLE_CHANGES, ADAPTIVE_MSE_SCORE_REG, ADAPTIVE_MSE_STYLE_CHANGES_REG
-valid_SSMTPIAA_losses = ['MSE_SCORE_REG', 'ADAPTIVE_MSE_SCORE_REG', 'MOVING_MSE_SCORE_REG', 'BCE_SCORE', 'BCE_SCORE_REG', 'MSE_STYLE_CHANGES', 'MSE_STYLE_CHANGES_REG']
+#TODO ADAPTIVE_MSE_SCORE_REG, ADAPTIVE_MSE_STYLE_CHANGES_REG
+valid_SSMTPIAA_losses = ['MSE_SCORE_REG', 'ADAPTIVE_MSE_SCORE_REG', 'MOVING_MSE_SCORE_REG',
+                         'BCE_SCORE', 'BCE_SCORE_REG',
+                         'MSE_STYLE_CHANGES', 'MSE_STYLE_CHANGES_REG',
+                         'MSE_STYLE_CHANGES_HINGE', 'MSE_STYLE_CHANGES_HINGE_REG']
 SSMTPIAA_loss = 'MSE_SCORE_REG'                      # Which ia_pre losses should be used by default
 
 automatic_epoch = True                             # Automatically stop enhancing image if loss remains unchanged
@@ -35,6 +36,7 @@ epochs = 100
 optim = 'sgd'                                      # also supports adam
 optim_lr = 0.025
 optim_momentum = 0.9
+hinge_val = 0.25                                    # value for hinge loss
 
 # ----- image parameters:
 

@@ -12,7 +12,7 @@ import config
 from autobright import normalize_brightness
 from neural_models import error_callback, CAN, NIMA_VGG
 from utils import nima_transform, print_msg, loss_with_l2_regularization, loss_with_filter_regularization, \
-    weighted_mean, jans_normalization, jans_transform, jans_padding, tensor_debug, RingBuffer
+    weighted_mean, jans_normalization, jans_transform, jans_padding, tensor_debug, RingBuffer, hinge
 
 from IA_folder.old.utils import mapping
 from IA_folder.IA import IA
@@ -77,7 +77,6 @@ class NICER(nn.Module):
 
         self.loss_func_mse = nn.MSELoss('mean').to(self.device)
         self.loss_func_bce = nn.BCELoss(reduction='mean').to(self.device)
-        self.loss_func_hinge = nn.MarginRankingLoss() #TODO: Read documentation for this function.
         self.weights = torch.tensor([[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]]).to(self.device)
 
         self.target = torch.FloatTensor([[1.0]]).to(self.device)
@@ -330,12 +329,8 @@ class NICER(nn.Module):
             if headless_mode is False and thread_stopEvent.is_set(): break
 
             if config.automatic_epoch and loss_buffer.get_std_dev() is not None:
-                if config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES' or 'MSE_STYLE_CHANGES_REG':
-                    if loss_buffer.get_std_dev() <= config.automatic_epoch_target*4:
-                        break
-                else:
-                    if loss_buffer.get_std_dev() <= config.automatic_epoch_target:
-                        break
+                if max(loss_buffer.data) - min(loss_buffer.data) < 0.025:
+                    break
 
             ## Check if sliders have been manually adjusted during last iteration, if yes apply adjustments (buggy af)
             # while not self.in_queue.empty():
@@ -424,6 +419,23 @@ class NICER(nn.Module):
                     ia_pre_loss = \
                         loss_with_filter_regularization((ia_pre_ratings['styles_change_strength'] * 1.5).cpu(),
                                                         torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]),
+                                                        self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                        initial_filters=user_preset_filters, gamma=self.gamma)
+            elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_HINGE':
+                ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
+                ia_pre_loss = self.loss_func_mse(ratings,
+                                                 torch.zeros(ratings.size()[1]).to(self.device))
+            elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_HINGE_REG':
+                ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
+                if re_init:
+                    ia_pre_loss = \
+                        loss_with_filter_regularization((ratings * 1.5).cpu(),
+                                                        torch.zeros(ratings.size()[1]),
+                                                        self.loss_func_mse.cpu(), self.filters.cpu(), gamma=self.gamma)
+                else:
+                    ia_pre_loss = \
+                        loss_with_filter_regularization((ratings * 1.5).cpu(),
+                                                        torch.zeros(ratings.size()[1]),
                                                         self.loss_func_mse.cpu(), self.filters.cpu(),
                                                         initial_filters=user_preset_filters, gamma=self.gamma)
             elif config.SSMTPIAA_loss == 'BCE_SCORE':
