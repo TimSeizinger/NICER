@@ -7,7 +7,7 @@ spec:
     spec:
       priorityClassName: research-med
       containers:
-        - name: nicer-io-test
+        - name: nicer-edit-test
           image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.1
           workingDir: /workdir
           imagePullPolicy: "IfNotPresent"

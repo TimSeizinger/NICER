@@ -376,11 +376,11 @@ class NICER(nn.Module):
             if config.SSMTPIAA_loss == 'MSE_SCORE_REG':
                 if re_init:
                     ia_pre_loss = \
-                        loss_with_filter_regularization(ia_pre_ratings['score'], self.target, self.loss_func_mse.cpu(),
-                                                        self.filters.cpu(), gamma=self.gamma)
+                        loss_with_filter_regularization(ia_pre_ratings['score'], self.target, self.loss_func_mse,
+                                                        self.filters, gamma=self.gamma)
                 else:
                     ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target,
-                                                                  self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                  self.loss_func_mse, self.filters,
                                                                   initial_filters=user_preset_filters, gamma=self.gamma)
             elif config.SSMTPIAA_loss == 'ADAPTIVE_MSE_SCORE_REG':
                 if score_target is None:

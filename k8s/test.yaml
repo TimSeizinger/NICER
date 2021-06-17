@@ -37,6 +37,6 @@ spec:
             monitors:
               - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20  # Not important for you, just copy along
             user: studgrimmalex  # <namespace>
-            path: "/home/stud/grimmalex" # The path you want to mount
+            path: "/home/stud/seizinger" # The path you want to mount
             secretRef: # The name of the secret for auth. Is always "ceph-secret"
               name: ceph-secret

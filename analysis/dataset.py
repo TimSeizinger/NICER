@@ -57,7 +57,7 @@ class Pexels:
     def __init__(
         self,
         mode: str,
-        image_dir: str = str(Path.home()) + '\\Documents\\datasets\\images\\pexels\\images',
+        image_dir: str = 'datasets\\pexels\\images',
         percentage_of_dataset: int = None,
         horizontal_flip: bool = False,
         normalize: bool = False,
