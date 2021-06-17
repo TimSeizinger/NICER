@@ -34,6 +34,6 @@ spec:
             monitors:
               - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20  # Not important for you, just copy along
             user: studseizinger  # <namespace>
-            path: "/autofs/ceph-stud-new/seizinger/git/NICER" # The path you want to mount
+            path: "/home/stud/seizinger/git/NICER" # The path you want to mount
             secretRef: # The name of the secret for auth. Is always "ceph-secret"
               name: ceph-secret
