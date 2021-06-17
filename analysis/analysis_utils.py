@@ -139,7 +139,7 @@ def evaluate_editing_pexels(nicer, output_file, mode, limit=None):
         results['edit_ia_pre_styles_change_strength'].append(
             abs_mean(ia_pre_ratings['styles_change_strength'].squeeze().tolist()))
 
-        '''
+
         # Export image with rating history
         item['img'].save('./analysis/results/' + output_file + '/' + item['image_id'])
         edited_image.save('./analysis/results/' + output_file + '/' + item['image_id'].split('.')[0] + '_edited.' + item['image_id'].split('.')[1])
@@ -156,6 +156,5 @@ def evaluate_editing_pexels(nicer, output_file, mode, limit=None):
     html = df.to_html()
     with open("./analysis/results/" + output_file + ".html", 'w') as file:
         file.write(html)
-    '''
 
 

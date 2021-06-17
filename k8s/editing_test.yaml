@@ -25,7 +25,7 @@ spec:
               name: localdir
           command:
             - python3
-            - analysis/pexels_analysis.py
+            - analysis/pexels_editing_test_orientation.py
       imagePullSecrets:
         - name: lsx-registry
       restartPolicy: "Never"
