@@ -1,4 +1,3 @@
-import config
 import os
 import threading
 import config

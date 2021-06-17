@@ -4,7 +4,7 @@ import random
 import pandas as pd
 
 from dataset import LandscapesTop
-from utils import nima_transform, weighted_mean
+from utils import nima_transform
 from nicer import NICER
 
 pwd = os.getcwd()

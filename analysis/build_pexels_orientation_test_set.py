@@ -1,7 +1,6 @@
 import pandas
 import os
 from dataset import Pexels
-from PIL import Image
 
 os.chdir(os.path.dirname(os.getcwd()))
 
