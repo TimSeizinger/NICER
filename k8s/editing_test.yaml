@@ -5,7 +5,7 @@ metadata:
 spec:
   template:
     spec:
-      priorityClassName: research-low
+      priorityClassName: research-high
       containers:
         - name: nicer-edit-test
           image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.1
