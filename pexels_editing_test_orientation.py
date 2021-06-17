@@ -1,8 +1,11 @@
 import config
 import os
+import torch
 
 from analysis_utils import evaluate_editing_pexels
 from nicer import NICER
+
+torch.Tensor([10, 1]).cuda()
 
 '''
 pwd = os.getcwd()
