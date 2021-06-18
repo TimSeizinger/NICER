@@ -12,6 +12,8 @@ pwd = os.getcwd()
 os.chdir(os.path.dirname(os.getcwd()))
 '''
 
+print(os.getcwd())
+
 output_file = 'pexels_wide_edit_score'
 
 if not os.path.isdir("./analysis/results/" + output_file + "/"):
