@@ -79,7 +79,9 @@ class NICER(nn.Module):
         self.loss_func_bce = nn.BCELoss(reduction='mean').to(self.device)
         self.weights = torch.tensor([[1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]]).to(self.device)
 
-        self.target = torch.FloatTensor([[1.0]]).to(self.device)
+        self.target0d = torch.tensor(1.0).to(self.device)
+        self.target1d = torch.FloatTensor([1.0]).to(self.device)
+        self.target2d = torch.FloatTensor([[1.0]]).to(self.device)
         self.length = torch.tensor(10.0).to(self.device)
 
         self.gamma = config.gamma
@@ -357,8 +359,8 @@ class NICER(nn.Module):
             current_score = ia_pre_ratings['score'].item()
             ia_fine_scores.append(weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length).item())
 
-            # NIMA_VGG16 loss, either using MSE or l2 loss with target distribution (legacy_NICER_loss_for_NIMA_VGG16)
-
+            # NIMA_VGG16 loss, either using MSE or l2 loss with target2d distribution (legacy_NICER_loss_for_NIMA_VGG16)
+            print('nima_vgg16_losses')
             if re_init:
                 # new for each image
                 nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(), self.filters.cpu(),
@@ -367,19 +369,19 @@ class NICER(nn.Module):
                 nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(), self.filters.cpu(),
                                                               initial_filters=user_preset_filters, gamma=self.gamma)
 
-
+            print('nima_mobilenetv2_loss')
             # NIMA_mobilenetv2 loss
             nima_mobilenetv2_loss = self.loss_func_mse(
-                weighted_mean(nima_mobilenetv2_distr_of_ratings, self.weights, self.length), self.target)
+                weighted_mean(nima_mobilenetv2_distr_of_ratings, self.weights, self.length), self.target0d)
 
             # IA_pre loss
             if config.SSMTPIAA_loss == 'MSE_SCORE_REG':
                 if re_init:
                     ia_pre_loss = \
-                        loss_with_filter_regularization(ia_pre_ratings['score'], self.target, self.loss_func_mse,
+                        loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d, self.loss_func_mse,
                                                         self.filters, gamma=self.gamma)
                 else:
-                    ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target,
+                    ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
                                                                   self.loss_func_mse, self.filters,
                                                                   initial_filters=user_preset_filters, gamma=self.gamma)
             elif config.SSMTPIAA_loss == 'ADAPTIVE_MSE_SCORE_REG':
@@ -439,21 +441,21 @@ class NICER(nn.Module):
                                                         self.loss_func_mse.cpu(), self.filters.cpu(),
                                                         initial_filters=user_preset_filters, gamma=self.gamma)
             elif config.SSMTPIAA_loss == 'BCE_SCORE':
-                ia_pre_loss = self.loss_func_bce(ia_pre_ratings['score'], self.target)
+                ia_pre_loss = self.loss_func_bce(ia_pre_ratings['score'], self.target2d)
             elif config.SSMTPIAA_loss == 'BCE_SCORE_REG':
                 if re_init:
                     ia_pre_loss = \
-                        loss_with_filter_regularization(ia_pre_ratings['score'], self.target, self.loss_func_bce.cpu(),
+                        loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d, self.loss_func_bce.cpu(),
                                                         self.filters.cpu(), gamma=self.gamma)
                 else:
-                    ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target,
+                    ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
                                                                   self.loss_func_bce.cpu(), self.filters.cpu(),
                                                                   initial_filters=user_preset_filters, gamma=self.gamma)
             else:
                 raise Exception('Illegal SSMTPIAA_loss')
 
             # IA_fine loss
-            ia_fine_loss = self.loss_func_mse(weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length), self.target)
+            ia_fine_loss = self.loss_func_mse(weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length), self.target0d)
 
             # Append each loss value to their respective list for later visualization
             nima_vgg16_losses.append(nima_vgg16_loss.item())

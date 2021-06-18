@@ -57,7 +57,7 @@ class Pexels:
     def __init__(
         self,
         mode: str,
-        image_dir: str = 'datasets/pexels/images',
+        image_dir: Path = Path('datasets/pexels/images'),
         percentage_of_dataset: int = None,
         horizontal_flip: bool = False,
         normalize: bool = False,
@@ -67,8 +67,9 @@ class Pexels:
         self.mode = mode
         self.horizontal_flip = horizontal_flip
         self.percentage_of_dataset = percentage_of_dataset
-
-        self.files = pd.read_csv(f"analysis/sets/{mode}_set.csv")
+        path = Path('analysis/sets/')
+        path = path / (mode + '_set.csv')
+        self.files = pd.read_csv(path)
         if self.percentage_of_dataset is not None:
             self.files = self.files[: int(len(self.files) * (self.percentage_of_dataset / 100))]
 
@@ -78,14 +79,17 @@ class Pexels:
         return len(self.files)
 
     def __getitem__(self, idx):
+        '''
         try:
             return self._actualgetitem(idx)
         except:
-            print("except"  + str(idx))
+            print("except" + str(idx))
             return self[random.randint(0, len(self))]
+        '''
+        return self._actualgetitem(idx)
 
     def _actualgetitem(self, idx: int):
-        path = self.image_dir + '/' + str(self.files.iloc[idx][0])
+        path = self.image_dir / str(self.files.iloc[idx][0])
         pil_img: Image = Image.open(path).convert("RGB")
         return {"image_id": self.files.iloc[idx][0], "img": pil_img}
 
