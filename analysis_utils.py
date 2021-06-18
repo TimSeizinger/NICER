@@ -1,7 +1,6 @@
 import pickle
 import json
 import pandas as pd
-import time
 
 from dataset import Pexels
 from utils import nima_transform, jans_transform, weighted_mean
@@ -78,7 +77,6 @@ def evaluate_rating_pexels(nicer, output_file, mode, limit=None):
         file.write(html)
 
 def evaluate_editing_pexels(nicer, output_file, mode, limit=None):
-    start_time = time.time()
 
     results = {'image_id': [],
                'orig_nima_vgg16_score': [], 'orig_nima_mobilenetv2_score': [], 'orig_ia_fine_score': [],
@@ -160,7 +158,4 @@ def evaluate_editing_pexels(nicer, output_file, mode, limit=None):
     with open("./analysis/results/" + output_file + ".html", 'w') as file:
         file.write(html)
 
-    elapsed_time = time.time() - start_time
-    elapsed_time = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
-    print(elapsed_time)
 
