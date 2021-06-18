@@ -43,14 +43,6 @@ spec:
             path: "/home/stud/seizinger/git/NICER" # The path you want to mount
             secretRef: # The name of the secret for auth. Is always "ceph-secret"
               name: ceph-secret
-        - name: scratch
-          cephfs:
-            monitors:
-              - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
-            user: pfister
-            path: "/scratch/stud/pfister/NIAA"
-            secretRef:
-              name: ceph-secret
         - name: dshm
           emptyDir:
             medium: Memory
