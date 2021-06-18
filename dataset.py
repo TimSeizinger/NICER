@@ -68,7 +68,7 @@ class Pexels:
         self.horizontal_flip = horizontal_flip
         self.percentage_of_dataset = percentage_of_dataset
 
-        self.files = pd.read_csv(f"analysis\\sets\\{mode}_set.csv")
+        self.files = pd.read_csv(f".\\analysis\\sets\\{mode}_set.csv")
         if self.percentage_of_dataset is not None:
             self.files = self.files[: int(len(self.files) * (self.percentage_of_dataset / 100))]
 
