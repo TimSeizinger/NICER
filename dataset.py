@@ -85,7 +85,7 @@ class Pexels:
             return self[random.randint(0, len(self))]
 
     def _actualgetitem(self, idx: int):
-        path = self.image_dir + '\\' + str(self.files.iloc[idx][0])
+        path = self.image_dir + '/' + str(self.files.iloc[idx][0])
         pil_img: Image = Image.open(path).convert("RGB")
         return {"image_id": self.files.iloc[idx][0], "img": pil_img}
 
