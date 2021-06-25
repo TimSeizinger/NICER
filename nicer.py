@@ -93,100 +93,76 @@ class NICER(nn.Module):
         else:
             error_callback('optimizer')
 
-    def forward(self, image: torch.Tensor, image_jan: torch.Tensor, fixedFilters=None, new=False, headless_mode=False):
+    def forward(self, image: torch.Tensor, image_jan: torch.Tensor, fixedFilters=None, new=False, headless_mode=False,
+                nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True):
         torch.cuda.synchronize()
-
-        # for benchmarking
-        '''
-        start = torch.cuda.Event(enable_timing=True)
-        end = torch.cuda.Event(enable_timing=True)
-        '''
 
         filter_tensor = torch.zeros((8, 224, 224), dtype=torch.float32).to(self.device)
 
-        # construct filtermap uniformly from given filters
-        for l in range(8):
-            if fixedFilters:  # filters were fixed in GUI, always use their passed values
-                if fixedFilters[l][0] == 1:
-                    filter_tensor[l, :, :] = fixedFilters[l][1]
+        nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, ia_fine_distr_of_ratings = \
+            None, None, None, None
+
+        if nima_vgg16:
+            # construct filtermap uniformly from given filters
+            for l in range(8):
+                if fixedFilters:  # filters were fixed in GUI, always use their passed values
+                    if fixedFilters[l][0] == 1:
+                        filter_tensor[l, :, :] = fixedFilters[l][1]
+                    else:
+                        filter_tensor[l, :, :] = self.filters.view(-1)[l]
                 else:
                     filter_tensor[l, :, :] = self.filters.view(-1)[l]
-            else:
-                filter_tensor[l, :, :] = self.filters.view(-1)[l]
 
-        # construct filtermap for Jan's Assessors
-        filter_tensor_jan = torch.zeros((8, image_jan.shape[1], image_jan.shape[2]), dtype=torch.float32).to(self.device)
+            # concat filters and img
+            mapped_img = torch.cat((image, filter_tensor.cpu()), dim=0).unsqueeze(dim=0).to(self.device)
+            # start.record()
+            enhanced_img = self.can(mapped_img)  # enhance img with CAN
+            tensor_debug(enhanced_img, 'enhanced image')
 
-        for l in range(8):
-            if fixedFilters:  # filters were fixed in GUI, always use their passed values
-                if fixedFilters[l][0] == 1:
-                    filter_tensor_jan[l, :, :] = fixedFilters[l][1]
+        if nima_mobilenetv2 | ssmtpiaa | ssmtpiaa_fine:
+            # construct filtermap for Jan's Assessors
+            filter_tensor_jan = torch.zeros((8, image_jan.shape[1], image_jan.shape[2]), dtype=torch.float32).to(self.device)
+
+            for l in range(8):
+                if fixedFilters:  # filters were fixed in GUI, always use their passed values
+                    if fixedFilters[l][0] == 1:
+                        filter_tensor_jan[l, :, :] = fixedFilters[l][1]
+                    else:
+                        filter_tensor_jan[l, :, :] = self.filters.view(-1)[l]
                 else:
                     filter_tensor_jan[l, :, :] = self.filters.view(-1)[l]
-            else:
-                filter_tensor_jan[l, :, :] = self.filters.view(-1)[l]
 
+            #concat filters and img for Jan's assessors
+            mapped_img_jan = torch.cat((image_jan, filter_tensor_jan.cpu()), dim=0).unsqueeze(dim=0).to(self.device)
+            #start.record()
+            enhanced_img_jan = self.can(mapped_img_jan)  # enhance img with CAN
+            tensor_debug(enhanced_img_jan, 'enhanced image jan')
 
-        # concat filters and img
-        mapped_img = torch.cat((image, filter_tensor.cpu()), dim=0).unsqueeze(dim=0).to(self.device)
-        #start.record()
-        enhanced_img = self.can(mapped_img)  # enhance img with CAN
-        tensor_debug(enhanced_img, 'enhanced image')
+            enhanced_img_jan = torch.clip(enhanced_img_jan, 0, 1)
+            tensor_debug(enhanced_img_jan, 'enhanced image jan clipped')
 
-        #concat filters and img for Jan's assessors
-        mapped_img_jan = torch.cat((image_jan, filter_tensor_jan.cpu()), dim=0).unsqueeze(dim=0).to(self.device)
-        #start.record()
-        enhanced_img_jan = self.can(mapped_img_jan)  # enhance img with CAN
-        tensor_debug(enhanced_img_jan, 'enhanced image jan')
+            enhanced_img_jan = jans_normalization(enhanced_img_jan)
+            tensor_debug(enhanced_img_jan, 'enhanced image jan normalized')
 
-        enhanced_img_jan = torch.clip(enhanced_img_jan, 0, 1)
-        tensor_debug(enhanced_img_jan, 'enhanced image jan clipped')
+            enhanced_img_jan = jans_padding(enhanced_img_jan)
+            tensor_debug(enhanced_img_jan, 'enhanced image jan padded')
 
-        enhanced_img_jan = jans_normalization(enhanced_img_jan)
-        tensor_debug(enhanced_img_jan, 'enhanced image jan normalized')
+        if nima_vgg16:
+            # NIMA_VGG16, returns NIMA distribution as tensor
+            nima_vgg16_distr_of_ratings = self.nima_vgg16(enhanced_img)  # get nima_vgg16 score distribution -> tensor
 
-        enhanced_img_jan = jans_padding(enhanced_img_jan)
-        tensor_debug(enhanced_img_jan, 'enhanced image jan padded')
+        if nima_mobilenetv2:
+            # NIMA_mobilenetv2, returns NIMA distribution as tensor
+            nima_mobilenetv2_distr_of_ratings = self.nima_mobilenetv2(
+                enhanced_img_jan)  # get nima_mobilenetv2 score distribution -> tensor
 
-        #torch.cuda.synchronize()
-        #end.record()
-        #torch.cuda.synchronize()
-        #print("CAN inference time: " + str(start.elapsed_time(end)))
+        if ssmtpiaa:
+            # IA_pre, returns Dict returns NIMA distribution as tensor
+            ia_pre_ratings = self.ia_pre(enhanced_img_jan)  # get ia_pre score -> tensor
 
-        # NIMA_VGG16, returns NIMA distribution as tensor
-        #start.record()
-        nima_vgg16_distr_of_ratings = self.nima_vgg16(enhanced_img)  # get nima_vgg16 score distribution -> tensor
-        #torch.cuda.synchronize()
-        #end.record()
-        #torch.cuda.synchronize()
-        #print("NIMA_VGG16 inference time: " + str(start.elapsed_time(end)))
-
-
-        # NIMA_mobilenetv2, returns NIMA distribution as tensor
-        #start.record()
-        nima_mobilenetv2_distr_of_ratings = self.nima_mobilenetv2(
-            enhanced_img_jan)  # get nima_mobilenetv2 score distribution -> tensor
-        #torch.cuda.synchronize()
-        #end.record()
-        #torch.cuda.synchronize()
-        #print("NIMA_mobilenetv2 inference time: " + str(start.elapsed_time(end)))
-
-        # IA_pre, returns Dict returns NIMA distribution as tensor
-        #start.record()
-        ia_pre_ratings = self.ia_pre(enhanced_img_jan)  # get ia_pre score -> tensor
-        #torch.cuda.synchronize()
-        #end.record()
-        #torch.cuda.synchronize()
-        #print("IA_pre inference time: " + str(start.elapsed_time(end)))
-
-        # IA_fine, returns NIMA distribution as tensor
-        #start.record()
-        ia_fine_distr_of_ratings = self.ia_fine(enhanced_img_jan)  # get ia_fine score distribution -> tensor
-        #torch.cuda.synchronize()
-        #end.record()
-        #torch.cuda.synchronize()
-        #print("IA_fine inference time: " + str(start.elapsed_time(end)))
-
+        if ssmtpiaa_fine:
+            # IA_fine, returns NIMA distribution as tensor
+            ia_fine_distr_of_ratings = self.ia_fine(enhanced_img_jan)  # get ia_fine score distribution -> tensor
         if not headless_mode:
             self.queue.put('dummy')  # dummy
 

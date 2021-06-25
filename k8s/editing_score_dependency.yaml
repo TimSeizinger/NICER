@@ -1,13 +1,13 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: test-job
+  name: editing-job
 spec:
   template:
     spec:
       priorityClassName: research-med
       containers:
-        - name: nicer-edit-test
+        - name: nicer-score-edit
           image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.1
           workingDir: /workdir
           imagePullPolicy: "Always"
