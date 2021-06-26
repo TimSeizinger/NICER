@@ -433,6 +433,28 @@ class NICER(nn.Module):
                         ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
                                                                       self.loss_func_bce.cpu(), self.filters.cpu(),
                                                                       initial_filters=user_preset_filters, gamma=self.gamma)
+                elif config.SSMTPIAA_loss == 'COMPOSITE':
+                    if re_init:
+                        score_loss = \
+                            loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d, self.loss_func_mse,
+                                                            self.filters, gamma=self.gamma)
+                    else:
+                        score_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
+                                                                      self.loss_func_mse, self.filters,
+                                                                      initial_filters=user_preset_filters, gamma=self.gamma)
+
+                    ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
+                    styles_loss = self.loss_func_mse(ratings,
+                                                     torch.zeros(ratings.size()[1]).to(self.device))
+
+                    composite_loss = score_loss * ia_pre_ratings['score'].item()  + styles_loss * (1 - ia_pre_ratings['score'].item())
+
+                    if config.composite_balance == 0.0:
+                        ia_pre_loss = composite_loss
+                    elif config.composite_balance < 0:
+                        ia_pre_loss = score_loss * abs(config.composite_balance) + composite_loss * (1 - abs(config.composite_balance))
+                    else:
+                        ia_pre_loss = composite_loss * (1 - abs(config.composite_balance)) + styles_loss * config.composite_balance
                 else:
                     raise Exception('Illegal SSMTPIAA_loss')
 

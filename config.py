@@ -9,11 +9,11 @@ use_auto_brightness_normalizer = False             # toggle to activate ABN
 valid_assesors = ['NIMA_VGG16', 'NIMA_mobilenetv2', 'SSMTPIAA', 'SSMTPIAA_fine']
 assessor = 'SSMTPIAA'                            # Which assessor network should be used by default
 
-#TODO ADAPTIVE_MSE_SCORE_REG, ADAPTIVE_MSE_STYLE_CHANGES_REG
 valid_SSMTPIAA_losses = ['MSE_SCORE_REG', 'ADAPTIVE_MSE_SCORE_REG', 'MOVING_MSE_SCORE_REG',
                          'BCE_SCORE', 'BCE_SCORE_REG',
                          'MSE_STYLE_CHANGES', 'MSE_STYLE_CHANGES_REG',
-                         'MSE_STYLE_CHANGES_HINGE', 'MSE_STYLE_CHANGES_HINGE_REG']
+                         'MSE_STYLE_CHANGES_HINGE', 'MSE_STYLE_CHANGES_HINGE_REG',
+                         'COMPOSITE']
 SSMTPIAA_loss = 'MSE_SCORE_REG'                      # Which ia_pre losses should be used by default
 
 automatic_epoch = False                             # Automatically stop enhancing image if loss remains unchanged
@@ -38,6 +38,7 @@ optim = 'sgd'                                      # also supports adam
 optim_lr = 0.025
 optim_momentum = 0.9
 hinge_val = 0.15                                    # value for hinge loss
+composite_balance = 0                             # [-1,0, 1.0]
 
 # ----- image parameters:
 
