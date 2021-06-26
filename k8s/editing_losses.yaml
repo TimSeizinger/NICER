@@ -17,11 +17,11 @@ spec:
           resources:
             limits:
               nvidia.com/gpu: "1"
-              cpu: "32"
+              cpu: "64"
               memory: "16Gi"
             requests:
               nvidia.com/gpu: "1"
-              cpu: "32"
+              cpu: "64"
               memory: "16Gi"
           volumeMounts:
             - mountPath: /workdir
