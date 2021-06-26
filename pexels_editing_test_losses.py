@@ -25,6 +25,9 @@ if not os.path.isdir("./analysis/results/"):
 if not os.path.isdir("./analysis/results/" + output_file + "/"):
     os.mkdir("./analysis/results/" + output_file + "/")
 
+if not os.path.isdir("./analysis/results/" + output_file + '_graph_data' + "/"):
+    os.mkdir("./analysis/results/" + output_file + '_graph_data' + "/")
+
 nicer = NICER(config.can_checkpoint_path, config.nima_checkpoint_path)
 
 

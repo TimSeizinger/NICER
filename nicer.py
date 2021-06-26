@@ -261,6 +261,9 @@ class NICER(nn.Module):
 
             Returns a re-sized 8bit image as np.array
         """
+        if headless_mode:
+            self.queue = None
+            self.in_queue = None
 
         # Scores and Losses lists for visualization
         if nima_vgg16:
@@ -522,10 +525,11 @@ class NICER(nn.Module):
                 else:
                     final_filters[k, :, :] = self.filters.view(-1)[k]
 
-            strings = ['Sat', 'Con', 'Bri', 'Sha', 'Hig', 'LLF', 'NLD', 'EXP']
-            print_msg("Final Filter Intensities: {}".format(
-                [strings[k] + ": " + str(final_filters[k, 0, 0].item() * 100) for k in range(8)]), 3)
-            self.queue.put([final_filters[k, 0, 0].item() for k in range(8)])
+            if not headless_mode:
+                strings = ['Sat', 'Con', 'Bri', 'Sha', 'Hig', 'LLF', 'NLD', 'EXP']
+                print_msg("Final Filter Intensities: {}".format(
+                    [strings[k] + ": " + str(final_filters[k, 0, 0].item() * 100) for k in range(8)]), 3)
+                self.queue.put([final_filters[k, 0, 0].item() for k in range(8)])
 
             mapped_img = torch.cat((original_tensor_transformed, final_filters.cpu()), dim=0).unsqueeze(dim=0).to(
                 self.device)

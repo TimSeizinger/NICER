@@ -35,16 +35,19 @@ def get_initial_fixed_filters(nicer):
             initial_filter_values.append([0, nicer.filters[k].item()])
     return initial_filter_values
 
-def write_dict_to_file(dict, filename):
+
+def write_dict_to_file(dict, filename, path="./analysis/results/"):
     df = pd.DataFrame.from_dict(dict)
-    df.to_csv("./analysis/results/" + filename + ".csv", sep=',', index=True)
+    df.to_csv(path + filename + ".csv", sep=',', index=True)
     html = df.to_html()
-    with open("./analysis/results/" + filename + ".html", 'w') as file:
+    with open(path + filename + ".html", 'w') as file:
         file.write(html)
+
 
 def add_to_dict(dict: dict, prefixes: list, postfix: str):
     for prefix in prefixes:
         dict[f'{prefix}{postfix}'] = []
+
 
 def get_results_dict(prefixes, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine):
     results = {'image_id': []}
@@ -74,7 +77,7 @@ def evaluate_image(image: Image, nicer, results, nima_vgg16=True, nima_mobilenet
     nicer.re_init()
 
     _, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, ia_fine_distr_of_ratings = \
-        nicer.forward(image_tensor_transformed, image_tensor_transformed_jan,
+        nicer.forward(image_tensor_transformed, image_tensor_transformed_jan, headless_mode=True,
                       nima_vgg16=nima_vgg16, nima_mobilenetv2=nima_mobilenetv2,
                       ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
 
@@ -94,14 +97,13 @@ def evaluate_image(image: Image, nicer, results, nima_vgg16=True, nima_mobilenet
         results[f'{prefix}_ia_fine_score'].append(
             weighted_mean(ia_fine_distr_of_ratings, nicer.weights, nicer.length).item() * 10)
 
+
 def evaluate_rating_pexels(nicer, output_file, mode, limit=None):
     results = {'image_id': [],
                'orig_nima_vgg16_score': [], 'orig_nima_mobilenetv2_score': [], 'orig_ia_fine_score': [],
                'orig_ia_pre_score': [],
                'orig_ia_pre_styles_change': [], 'orig_ia_pre_styles_change_strength': [],
                }
-
-
 
     pexels = Pexels(mode=mode)
 
@@ -158,7 +160,6 @@ def evaluate_editing_pexels(nicer, output_file, mode, limit=None,
 
 def evaluate_editing_losses_pexels(nicer, output_file, mode, losses: list, limit=None,
                             nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True):
-
     results = get_results_dict(['orig'] + losses, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine)
 
     pexels = Pexels(mode=mode)
@@ -197,4 +198,12 @@ def evaluate_editing_losses_pexels(nicer, output_file, mode, losses: list, limit
             with open("./analysis/results/" + output_file + '/' + item['image_id'].split('.')[0] + loss + ".json", "w") as outfile:
                 json.dump(graph_data, outfile)
 
-    write_dict_to_file(results, output_file)
+        if i % 50 == 0:
+            write_dict_to_file(results, output_file + str(i),
+                               path="./analysis/results/" + output_file + '_graph_data' + "/")
+            for key in results:
+                results[key] = []
+
+    if results['image_id']:
+        write_dict_to_file(results, output_file + str(limit),
+                           path="./analysis/results/" + output_file + '_graph_data' + "/")
