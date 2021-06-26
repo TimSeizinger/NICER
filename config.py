@@ -16,7 +16,7 @@ valid_SSMTPIAA_losses = ['MSE_SCORE_REG', 'ADAPTIVE_MSE_SCORE_REG', 'MOVING_MSE_
                          'MSE_STYLE_CHANGES_HINGE', 'MSE_STYLE_CHANGES_HINGE_REG']
 SSMTPIAA_loss = 'MSE_SCORE_REG'                      # Which ia_pre losses should be used by default
 
-automatic_epoch = True                             # Automatically stop enhancing image if loss remains unchanged
+automatic_epoch = False                             # Automatically stop enhancing image if loss remains unchanged
 automatic_epoch_target = 0.002
 
 save_animation = False                              # saves animation of the network editing
@@ -33,7 +33,7 @@ padding = True
 
 
 gamma = 0.1
-epochs = 100
+epochs = 50
 optim = 'sgd'                                      # also supports adam
 optim_lr = 0.025
 optim_momentum = 0.9

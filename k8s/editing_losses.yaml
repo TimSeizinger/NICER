@@ -1,13 +1,13 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: editing-job
+  name: edit-job
 spec:
   template:
     spec:
       priorityClassName: research-med
       containers:
-        - name: nicer-score-edit
+        - name: nicer-loss
           image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.1
           workingDir: /workdir
           imagePullPolicy: "Always"
@@ -17,11 +17,11 @@ spec:
           resources:
             limits:
               nvidia.com/gpu: "1"
-              cpu: "24"
+              cpu: "32"
               memory: "16Gi"
             requests:
               nvidia.com/gpu: "1"
-              cpu: "24"
+              cpu: "32"
               memory: "16Gi"
           volumeMounts:
             - mountPath: /workdir
@@ -30,7 +30,7 @@ spec:
               name: dshm
           command:
             - python3
-            - pexels_editing_test_orientation.py
+            - pexels_editing_test_losses.py
       imagePullSecrets:
         - name: lsx-registry
       restartPolicy: "Never"

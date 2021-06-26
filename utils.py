@@ -159,11 +159,9 @@ def get_tensor_from_raw_image(path, size=None):
     return img_tensor
 
 
-def hinge(rating: torch.Tensor, hinge_val: float=0.25):
-    print(rating)
+def hinge(rating: torch.Tensor, hinge_val: float = 0.25):
     rating = torch.abs(rating)
     rating[rating < hinge_val] = 0.0
-    print(rating)
     return rating
 
 
