@@ -138,7 +138,9 @@ def evaluate_editing_pexels(nicer, output_file, mode, limit=None,
         evaluate_image(item['img'], nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='orig')
 
         # Edit image
-        edited_image, graph_data = nicer.enhance_image(item['img'], re_init=True, headless_mode=True)
+        edited_image, graph_data = nicer.enhance_image(item['img'], re_init=True, headless_mode=True,
+                                                       nima_vgg16=nima_vgg16, nima_mobilenetv2=nima_mobilenetv2,
+                                                       ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
         edited_image = Image.fromarray(edited_image)
 
         # Evaluate edited image and save scores
@@ -153,10 +155,10 @@ def evaluate_editing_pexels(nicer, output_file, mode, limit=None,
 
     write_dict_to_file(results, output_file)
 
-def evaluate_editing_losses_pexels(nicer, output_file, mode, limit=None,
+def evaluate_editing_losses_pexels(nicer, output_file, mode, losses: list, limit=None,
                             nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True):
 
-    results = get_results_dict(['orig', 'score', 'changes', 'hinge'], nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine)
+    results = get_results_dict(['orig'] + losses, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine)
 
     pexels = Pexels(mode=mode)
 
@@ -171,18 +173,22 @@ def evaluate_editing_losses_pexels(nicer, output_file, mode, limit=None,
         # Evaluate unedited image and save scores
         evaluate_image(item['img'], nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='orig')
 
-        # Edit image
-        edited_image, graph_data = nicer.enhance_image(item['img'], re_init=True, headless_mode=True)
-        edited_image = Image.fromarray(edited_image)
+        for loss in losses:
+            # Set loss
+            nicer.config.SSMTPIAA_loss = loss
 
-        # Evaluate edited image and save scores
-        evaluate_image(edited_image, nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='edit')
+            # Edit image
+            edited_image, graph_data = nicer.enhance_image(item['img'], re_init=True, headless_mode=True)
+            edited_image = Image.fromarray(edited_image)
 
-        # Export image with rating history
-        item['img'].save('./analysis/results/' + output_file + '/' + item['image_id'])
-        edited_image.save('./analysis/results/' + output_file + '/' + item['image_id'].split('.')[0] + '_edited' + '.' + item['image_id'].split('.')[1])
+            # Evaluate edited image and save scores
+            evaluate_image(edited_image, nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='edit')
 
-        with open("./analysis/results/" + output_file + '/' + item['image_id'].split('.')[0] + ".json", "w") as outfile:
-            json.dump(graph_data, outfile)
+            # Export image with rating history
+            item['img'].save('./analysis/results/' + output_file + '/' + item['image_id'])
+            edited_image.save('./analysis/results/' + output_file + '/' + item['image_id'].split('.')[0] + '_edited' + '.' + item['image_id'].split('.')[1])
+
+            with open("./analysis/results/" + output_file + '/' + item['image_id'].split('.')[0] + ".json", "w") as outfile:
+                json.dump(graph_data, outfile)
 
     write_dict_to_file(results, output_file)
