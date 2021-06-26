@@ -303,7 +303,7 @@ class NICER(nn.Module):
                 else:
                     initial_filter_values.append([0, self.filters[k].item()])
 
-        loss_buffer = RingBuffer(4)
+        loss_buffer = RingBuffer(6)
         score_target = None
 
         # optimize image:
@@ -315,7 +315,7 @@ class NICER(nn.Module):
                 break
 
             if config.automatic_epoch and loss_buffer.get_std_dev() is not None:
-                if max(loss_buffer.data) - min(loss_buffer.data) < 0.025:
+                if max(loss_buffer.data) - min(loss_buffer.data) < 0.035:
                     break
 
             ## Check if sliders have been manually adjusted during last iteration, if yes apply adjustments (buggy af)
@@ -368,7 +368,7 @@ class NICER(nn.Module):
                                                                       initial_filters=user_preset_filters, gamma=self.gamma)
                 elif config.SSMTPIAA_loss == 'ADAPTIVE_MSE_SCORE_REG':
                     if score_target is None:
-                        score_target = min(ia_pre_ratings['score'].item + 0.3, 1.0)
+                        score_target = min(ia_pre_ratings['score'].item() + 0.3, 1.0)
                         print('score_target is: ' + str(score_target))
                         score_target = torch.FloatTensor([[score_target]]).to(self.device)
                     if re_init:

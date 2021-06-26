@@ -219,7 +219,7 @@ class NicerGui:
             self.optim_lr = config.optim_lr
             self.optim_lr_slider = Scale(master, from_=0.001, to=0.1, length=sliderlength, orient=HORIZONTAL, resolution=0.001,
                                          var=self.optim_lr, command=self.update_optim_lr)
-            self.optim_lr_slider.set(0.05)
+            self.optim_lr_slider.set(config.optim_lr)
 
             self.optim_lr_label.place(x=20, y=50 + 8 * space)
             self.optim_lr_slider.place(x=150, y=30 + 8 * space)
