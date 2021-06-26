@@ -30,12 +30,13 @@ def error_callback(caller):
     elif caller is 'optimizer':
         sys.exit("Illegal optimizer. Use SGD or ADAM.")
 
-
+# Transforms input image to 224x224 square image
 nima_transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor()
 ])
 
+# Needed for jan's networks which are sensitive to the aspect ratio of the input
 def jans_transform(image):
     w, h = image.size
     if w > h:
@@ -159,7 +160,10 @@ def get_tensor_from_raw_image(path, size=None):
 
 
 def hinge(rating: torch.Tensor, hinge_val: float=0.25):
-    rating[abs(rating) < hinge_val] = 0.0
+    print(rating)
+    rating = torch.abs(rating)
+    rating[rating < hinge_val] = 0.0
+    print(rating)
     return rating
 
 

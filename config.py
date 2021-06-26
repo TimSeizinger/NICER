@@ -29,6 +29,7 @@ animate_graphs = False                              # saves animated versions of
 choose_save_name_and_folder = False                # able to specify image output folder and name
 
 debug_image_pipeline = False
+padding = True
 
 
 gamma = 0.1
@@ -36,7 +37,7 @@ epochs = 100
 optim = 'sgd'                                      # also supports adam
 optim_lr = 0.025
 optim_momentum = 0.9
-hinge_val = 0.25                                    # value for hinge loss
+hinge_val = 0.15                                    # value for hinge loss
 
 # ----- image parameters:
 

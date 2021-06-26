@@ -22,6 +22,8 @@ from IA2NIMA.NIMA import NIMA
 class NICER(nn.Module):
 
     def __init__(self, checkpoint_can, checkpoint_nima, device='cpu', can_arch=8):
+        self.config: config = config
+
         super(NICER, self).__init__()
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         print("Using", self.device)
@@ -118,6 +120,8 @@ class NICER(nn.Module):
             # start.record()
             enhanced_img = self.can(mapped_img)  # enhance img with CAN
             tensor_debug(enhanced_img, 'enhanced image')
+        else:
+            enhanced_img = None
 
         if nima_mobilenetv2 | ssmtpiaa | ssmtpiaa_fine:
             # construct filtermap for Jan's Assessors
@@ -134,7 +138,6 @@ class NICER(nn.Module):
 
             #concat filters and img for Jan's assessors
             mapped_img_jan = torch.cat((image_jan, filter_tensor_jan.cpu()), dim=0).unsqueeze(dim=0).to(self.device)
-            #start.record()
             enhanced_img_jan = self.can(mapped_img_jan)  # enhance img with CAN
             tensor_debug(enhanced_img_jan, 'enhanced image jan')
 
@@ -144,8 +147,9 @@ class NICER(nn.Module):
             enhanced_img_jan = jans_normalization(enhanced_img_jan)
             tensor_debug(enhanced_img_jan, 'enhanced image jan normalized')
 
-            enhanced_img_jan = jans_padding(enhanced_img_jan)
-            tensor_debug(enhanced_img_jan, 'enhanced image jan padded')
+            if config.padding:
+                enhanced_img_jan = jans_padding(enhanced_img_jan)
+                tensor_debug(enhanced_img_jan, 'enhanced image jan padded')
 
         if nima_vgg16:
             # NIMA_VGG16, returns NIMA distribution as tensor

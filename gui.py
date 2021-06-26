@@ -226,7 +226,7 @@ class NicerGui:
 
             # Image Assessor Selector
             self.selected_IA = StringVar(master)
-            self.selected_IA.set(config.valid_assesors[0])
+            self.selected_IA.set(config.assessor)
             self.assessor_selection = OptionMenu(master, self.selected_IA, *config.valid_assesors, command=self.update_assessor)
             self.assessor_selection.place(x=40 + 295, y=button_y + 20)
 
