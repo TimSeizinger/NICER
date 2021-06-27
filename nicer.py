@@ -437,14 +437,20 @@ class NICER(nn.Module):
                                                                       self.loss_func_bce.cpu(), self.filters.cpu(),
                                                                       initial_filters=user_preset_filters, gamma=self.gamma)
                 elif config.SSMTPIAA_loss == 'COMPOSITE':
+                    if score_target is None:
+                        score_target = min(ia_pre_ratings['score'].item() + 0.3, 1.0)
+                        #print('score_target is: ' + str(score_target))
+                        score_target = torch.FloatTensor([[score_target]]).to(self.device)
                     if re_init:
                         score_loss = \
-                            loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d, self.loss_func_mse,
-                                                            self.filters, gamma=self.gamma)
+                            loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                            self.loss_func_mse.cpu(),
+                                                            self.filters.cpu(), gamma=self.gamma)
                     else:
-                        score_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
-                                                                      self.loss_func_mse, self.filters,
-                                                                      initial_filters=user_preset_filters, gamma=self.gamma)
+                        score_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                      self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                      initial_filters=user_preset_filters,
+                                                                      gamma=self.gamma)
 
                     ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
                     styles_loss = self.loss_func_mse(ratings,

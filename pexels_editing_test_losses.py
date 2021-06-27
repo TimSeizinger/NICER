@@ -17,7 +17,7 @@ os.chdir(os.path.dirname(os.getcwd()))
 
 print(os.getcwd())
 
-output_file = 'pexels_composite_loss'
+output_file = 'pexels_composite_loss_adaptive'
 
 if not os.path.isdir("./analysis/results/"):
     os.mkdir("./analysis/results/")
