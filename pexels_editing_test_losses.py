@@ -17,7 +17,7 @@ os.chdir(os.path.dirname(os.getcwd()))
 
 print(os.getcwd())
 
-output_file = 'pexels_losses'
+output_file = 'pexels_composite_loss'
 
 if not os.path.isdir("./analysis/results/"):
     os.mkdir("./analysis/results/")
@@ -31,11 +31,8 @@ if not os.path.isdir("./analysis/results/" + output_file + '_graph_data' + "/"):
 nicer = NICER(config.can_checkpoint_path, config.nima_checkpoint_path)
 
 
-evaluate_editing_losses_pexels(nicer, output_file, 'pexels_test_1000',
-                               ['MSE_SCORE_REG', 'ADAPTIVE_MSE_SCORE_REG', 'MOVING_MSE_SCORE_REG',
-                                'MSE_STYLE_CHANGES_REG', 'MSE_STYLE_CHANGES_HINGE', 'MSE_STYLE_CHANGES_HINGE_REG',
-                                'COMPOSITE'],
-                               nima_vgg16=False, nima_mobilenetv2=False, ssmtpiaa=True, ssmtpiaa_fine=False, limit=250)
+evaluate_editing_losses_pexels(nicer, output_file, 'pexels_test_1000', ['COMPOSITE'],
+                               nima_vgg16=False, nima_mobilenetv2=False, ssmtpiaa=True, ssmtpiaa_fine=False, limit=10)
 
 elapsed_time = time.time() - start_time
 elapsed_time = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))

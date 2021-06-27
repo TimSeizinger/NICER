@@ -450,14 +450,17 @@ class NICER(nn.Module):
                     styles_loss = self.loss_func_mse(ratings,
                                                      torch.zeros(ratings.size()[1]).to(self.device))
 
-                    composite_loss = score_loss * ia_pre_ratings['score'].item()  + styles_loss * (1 - ia_pre_ratings['score'].item())
+                    composite_loss = score_loss * torch.pow(ia_pre_ratings['score'], config.composite_pow) + \
+                                     styles_loss * (1 - torch.pow(ia_pre_ratings['score'], config.composite_pow))
 
                     if config.composite_balance == 0.0:
                         ia_pre_loss = composite_loss
                     elif config.composite_balance < 0:
-                        ia_pre_loss = score_loss * abs(config.composite_balance) + composite_loss * (1 - abs(config.composite_balance))
+                        ia_pre_loss = score_loss * abs(config.composite_balance) + \
+                                      composite_loss * (1 - abs(config.composite_balance))
                     else:
-                        ia_pre_loss = composite_loss * (1 - abs(config.composite_balance)) + styles_loss * config.composite_balance
+                        ia_pre_loss = composite_loss * (1 - abs(config.composite_balance)) + \
+                                      styles_loss * config.composite_balance
                 else:
                     raise Exception('Illegal SSMTPIAA_loss')
 
