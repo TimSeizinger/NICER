@@ -197,7 +197,6 @@ def loss_with_l2_regularization(nima_result, filters, gamma=config.gamma, initia
 
 
 def loss_with_filter_regularization(rating, target, loss_func, filters, gamma=config.gamma, initial_filters=None):
-    print('loss_with_filter_regularization gamma: ' + str(gamma))
     if initial_filters is not None:
         if len(filters) != len(initial_filters): error_callback('filter_length_l2loss')
 

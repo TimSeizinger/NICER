@@ -1,5 +1,6 @@
 import queue
 import time
+import cma
 
 import numpy as np
 import torch
@@ -92,6 +93,8 @@ class NICER(nn.Module):
             self.optimizer = torch.optim.SGD(params=[self.filters], lr=config.optim_lr, momentum=config.optim_momentum)
         elif config.optim == 'adam':
             self.optimizer = torch.optim.Adam(params=[self.filters], lr=config.optim_lr)
+        elif config.optim == 'cma':
+            self.optimizer = cma.CMAEvolutionStrategy(x0=self.filters.tolist(), sigma0=config.cma_sigma, inopts={'popsize': config.cma_population, 'bounds': [-100, 100]})
         else:
             error_callback('optimizer')
 
@@ -249,6 +252,9 @@ class NICER(nn.Module):
             self.optimizer = torch.optim.SGD(params=[self.filters], lr=config.optim_lr, momentum=config.optim_momentum)
         elif config.optim == 'adam':
             self.optimizer = torch.optim.Adam(params=[self.filters], lr=config.optim_lr)
+        elif config.optim == 'cma':
+            self.optimizer = cma.CMAEvolutionStrategy(x0=self.filters.tolist(), sigma0=config.cma_sigma,
+                                                      inopts={'popsize': config.cma_population, 'bounds': [-100, 100]})
         else:
             error_callback('optimizer')
 
@@ -313,208 +319,644 @@ class NICER(nn.Module):
         print_msg("Starting optimization", 2)
         start_time = time.time()
 
-        for i in range(epochs):
-            if headless_mode is False and thread_stopEvent.is_set():
-                break
-
-            if config.automatic_epoch and loss_buffer.get_std_dev() is not None:
-                if max(loss_buffer.data) - min(loss_buffer.data) < 0.035:
+        if not config.optim == 'cma':
+            for i in range(epochs):
+                if headless_mode is False and thread_stopEvent.is_set():
                     break
 
-            ## Check if sliders have been manually adjusted during last iteration, if yes apply adjustments (buggy af)
-            # while not self.in_queue.empty():
-            #    self.set_filters(self.in_queue.get())
+                if config.automatic_epoch and loss_buffer.get_std_dev() is not None:
+                    if max(loss_buffer.data) - min(loss_buffer.data) < 0.035:
+                        break
 
-            print_msg("Iteration {} of {}".format(i, epochs), 2)
+                ## Check if sliders have been manually adjusted during last iteration, if yes apply adjustments (buggy af)
+                # while not self.in_queue.empty():
+                #    self.set_filters(self.in_queue.get())
 
-            self.optimizer.zero_grad()
+                print_msg("Iteration {} of {}".format(i, epochs), 2)
 
-            if fixFilters:
-                enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, \
-                ia_fine_distr_of_ratings = self.forward(image_tensor_transformed, image_tensor_transformed_jan,
-                                                        fixedFilters=initial_filter_values, headless_mode=headless_mode,
-                                                        nima_vgg16=nima_vgg16, nima_mobilenetv2=nima_mobilenetv2,
-                                                        ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
-            else:
-                enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, \
-                ia_fine_distr_of_ratings = self.forward(image_tensor_transformed, image_tensor_transformed_jan,
-                                                        headless_mode=headless_mode,
-                                                        nima_vgg16=nima_vgg16, nima_mobilenetv2=nima_mobilenetv2,
-                                                        ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
+                self.optimizer.zero_grad()
 
-            # NIMA_VGG16 loss, either using MSE or l2 loss with target2d distribution (legacy_NICER_loss_for_NIMA_VGG16)
-            if nima_vgg16:
-                print('nima_vgg16_losses')
-                if re_init:
-                    # new for each image
-                    nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(), self.filters.cpu(),
-                                                                  gamma=self.gamma)
+                if fixFilters:
+                    enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, \
+                    ia_fine_distr_of_ratings = self.forward(image_tensor_transformed, image_tensor_transformed_jan,
+                                                            fixedFilters=initial_filter_values, headless_mode=headless_mode,
+                                                            nima_vgg16=nima_vgg16, nima_mobilenetv2=nima_mobilenetv2,
+                                                            ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
                 else:
-                    nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(), self.filters.cpu(),
-                                                                  initial_filters=user_preset_filters, gamma=self.gamma)
-            if nima_mobilenetv2:
-                print('nima_mobilenetv2_loss')
-                # NIMA_mobilenetv2 loss
-                nima_mobilenetv2_loss = self.loss_func_mse(
-                    weighted_mean(nima_mobilenetv2_distr_of_ratings, self.weights, self.length), self.target0d)
+                    enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, \
+                    ia_fine_distr_of_ratings = self.forward(image_tensor_transformed, image_tensor_transformed_jan,
+                                                            headless_mode=headless_mode,
+                                                            nima_vgg16=nima_vgg16, nima_mobilenetv2=nima_mobilenetv2,
+                                                            ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
 
-            if ssmtpiaa:
-                # IA_pre loss
-                if config.SSMTPIAA_loss == 'MSE_SCORE_REG':
+                # NIMA_VGG16 loss, either using MSE or l2 loss with target2d distribution (legacy_NICER_loss_for_NIMA_VGG16)
+                if nima_vgg16:
+                    print('nima_vgg16_losses')
                     if re_init:
-                        ia_pre_loss = \
-                            loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d, self.loss_func_mse,
-                                                            self.filters, gamma=self.gamma)
-                    else:
-                        ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
-                                                                      self.loss_func_mse, self.filters,
-                                                                      initial_filters=user_preset_filters, gamma=self.gamma)
-                elif config.SSMTPIAA_loss == 'ADAPTIVE_MSE_SCORE_REG':
-                    if score_target is None:
-                        score_target = min(ia_pre_ratings['score'].item() + 0.3, 1.0)
-                        print('score_target is: ' + str(score_target))
-                        score_target = torch.FloatTensor([[score_target]]).to(self.device)
-                    if re_init:
-                        ia_pre_loss = \
-                            loss_with_filter_regularization(ia_pre_ratings['score'], score_target, self.loss_func_mse.cpu(),
-                                                            self.filters.cpu(), gamma=self.gamma)
-                    else:
-                        ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
-                                                                      self.loss_func_mse.cpu(), self.filters.cpu(),
-                                                                      initial_filters=user_preset_filters, gamma=self.gamma)
-                elif config.SSMTPIAA_loss == 'MOVING_MSE_SCORE_REG':
-                    score_target = min(ia_pre_ratings['score'].item() + 0.2, 1.0)
-                    score_target = torch.FloatTensor([[score_target]]).to(self.device)
-                    if re_init:
-                        ia_pre_loss = \
-                            loss_with_filter_regularization(ia_pre_ratings['score'], score_target, self.loss_func_mse.cpu(),
-                                                            self.filters.cpu(), gamma=self.gamma)
-                    else:
-                        ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
-                                                                      self.loss_func_mse.cpu(), self.filters.cpu(),
-                                                                      initial_filters=user_preset_filters, gamma=self.gamma)
-                elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES':
-                    ia_pre_loss = self.loss_func_mse(ia_pre_ratings['styles_change_strength'],
-                                                     torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]).to(self.device))
-                elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_REG':
-                    if re_init:
-                        ia_pre_loss = \
-                            loss_with_filter_regularization((ia_pre_ratings['styles_change_strength'] * 1.5).cpu(),
-                                                            torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]),
-                                                            self.loss_func_mse.cpu(), self.filters.cpu(), gamma=self.gamma)
-                    else:
-                        ia_pre_loss = \
-                            loss_with_filter_regularization((ia_pre_ratings['styles_change_strength'] * 1.5).cpu(),
-                                                            torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]),
-                                                            self.loss_func_mse.cpu(), self.filters.cpu(),
-                                                            initial_filters=user_preset_filters, gamma=self.gamma)
-                elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_HINGE':
-                    ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
-                    ia_pre_loss = self.loss_func_mse(ratings,
-                                                     torch.zeros(ratings.size()[1]).to(self.device))
-                elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_HINGE_REG':
-                    ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
-                    if re_init:
-                        ia_pre_loss = \
-                            loss_with_filter_regularization((ratings * 1.5).cpu(),
-                                                            torch.zeros(ratings.size()[1]),
-                                                            self.loss_func_mse.cpu(), self.filters.cpu(), gamma=self.gamma)
-                    else:
-                        ia_pre_loss = \
-                            loss_with_filter_regularization((ratings * 1.5).cpu(),
-                                                            torch.zeros(ratings.size()[1]),
-                                                            self.loss_func_mse.cpu(), self.filters.cpu(),
-                                                            initial_filters=user_preset_filters, gamma=self.gamma)
-                elif config.SSMTPIAA_loss == 'BCE_SCORE':
-                    ia_pre_loss = self.loss_func_bce(ia_pre_ratings['score'], self.target2d)
-                elif config.SSMTPIAA_loss == 'BCE_SCORE_REG':
-                    if re_init:
-                        ia_pre_loss = \
-                            loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d, self.loss_func_bce.cpu(),
-                                                            self.filters.cpu(), gamma=self.gamma)
-                    else:
-                        ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
-                                                                      self.loss_func_bce.cpu(), self.filters.cpu(),
-                                                                      initial_filters=user_preset_filters, gamma=self.gamma)
-                elif config.SSMTPIAA_loss == 'COMPOSITE':
-                    if score_target is None:
-                        score_target = min(ia_pre_ratings['score'].item() + 0.3, 1.0)
-                        #print('score_target is: ' + str(score_target))
-                        score_target = torch.FloatTensor([[score_target]]).to(self.device)
-                    if re_init:
-                        score_loss = \
-                            loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
-                                                            self.loss_func_mse.cpu(),
-                                                            self.filters.cpu(), gamma=self.gamma)
-                    else:
-                        score_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
-                                                                      self.loss_func_mse.cpu(), self.filters.cpu(),
-                                                                      initial_filters=user_preset_filters,
+                        # new for each image
+                        nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(), self.filters.cpu(),
                                                                       gamma=self.gamma)
-
-                    ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
-                    styles_loss = self.loss_func_mse(ratings,
-                                                     torch.zeros(ratings.size()[1]).to(self.device))
-
-                    composite_loss = score_loss * torch.pow(ia_pre_ratings['score'], config.composite_pow) + \
-                                     styles_loss * (1 - torch.pow(ia_pre_ratings['score'], config.composite_pow))
-
-                    if config.composite_balance == 0.0:
-                        ia_pre_loss = composite_loss
-                    elif config.composite_balance < 0:
-                        ia_pre_loss = score_loss * abs(config.composite_balance) + \
-                                      composite_loss * (1 - abs(config.composite_balance))
                     else:
-                        ia_pre_loss = composite_loss * (1 - abs(config.composite_balance)) + \
-                                      styles_loss * config.composite_balance
+                        nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(), self.filters.cpu(),
+                                                                      initial_filters=user_preset_filters, gamma=self.gamma)
+                if nima_mobilenetv2:
+                    print('nima_mobilenetv2_loss')
+                    # NIMA_mobilenetv2 loss
+                    nima_mobilenetv2_loss = self.loss_func_mse(
+                        weighted_mean(nima_mobilenetv2_distr_of_ratings, self.weights, self.length), self.target0d)
+
+                if ssmtpiaa:
+                    # IA_pre loss
+                    if config.SSMTPIAA_loss == 'MSE_SCORE_REG':
+                        if re_init:
+                            ia_pre_loss = \
+                                loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d, self.loss_func_mse,
+                                                                self.filters, gamma=self.gamma)
+                        else:
+                            ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
+                                                                          self.loss_func_mse, self.filters,
+                                                                          initial_filters=user_preset_filters, gamma=self.gamma)
+                    elif config.SSMTPIAA_loss == 'ADAPTIVE_MSE_SCORE_REG':
+                        if score_target is None:
+                            score_target = min(ia_pre_ratings['score'].item() + 0.3, 1.0)
+                            print('score_target is: ' + str(score_target))
+                            score_target = torch.FloatTensor([[score_target]]).to(self.device)
+                        if re_init:
+                            ia_pre_loss = \
+                                loss_with_filter_regularization(ia_pre_ratings['score'], score_target, self.loss_func_mse.cpu(),
+                                                                self.filters.cpu(), gamma=self.gamma)
+                        else:
+                            ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                          self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                          initial_filters=user_preset_filters, gamma=self.gamma)
+                    elif config.SSMTPIAA_loss == 'MOVING_MSE_SCORE_REG':
+                        score_target = min(ia_pre_ratings['score'].item() + 0.2, 1.0)
+                        score_target = torch.FloatTensor([[score_target]]).to(self.device)
+                        if re_init:
+                            ia_pre_loss = \
+                                loss_with_filter_regularization(ia_pre_ratings['score'], score_target, self.loss_func_mse.cpu(),
+                                                                self.filters.cpu(), gamma=self.gamma)
+                        else:
+                            ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                          self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                          initial_filters=user_preset_filters, gamma=self.gamma)
+                    elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES':
+                        ia_pre_loss = self.loss_func_mse(ia_pre_ratings['styles_change_strength'],
+                                                         torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]).to(self.device))
+                    elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_REG':
+                        if re_init:
+                            ia_pre_loss = \
+                                loss_with_filter_regularization((ia_pre_ratings['styles_change_strength'] * 1.5).cpu(),
+                                                                torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]),
+                                                                self.loss_func_mse.cpu(), self.filters.cpu(), gamma=self.gamma)
+                        else:
+                            ia_pre_loss = \
+                                loss_with_filter_regularization((ia_pre_ratings['styles_change_strength'] * 1.5).cpu(),
+                                                                torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]),
+                                                                self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                initial_filters=user_preset_filters, gamma=self.gamma)
+                    elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_HINGE':
+                        ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
+                        ia_pre_loss = self.loss_func_mse(ratings,
+                                                         torch.zeros(ratings.size()[1]).to(self.device))
+                    elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_HINGE_REG':
+                        ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
+                        if re_init:
+                            ia_pre_loss = \
+                                loss_with_filter_regularization((ratings * 1.5).cpu(),
+                                                                torch.zeros(ratings.size()[1]),
+                                                                self.loss_func_mse.cpu(), self.filters.cpu(), gamma=self.gamma)
+                        else:
+                            ia_pre_loss = \
+                                loss_with_filter_regularization((ratings * 1.5).cpu(),
+                                                                torch.zeros(ratings.size()[1]),
+                                                                self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                initial_filters=user_preset_filters, gamma=self.gamma)
+                    elif config.SSMTPIAA_loss == 'BCE_SCORE':
+                        ia_pre_loss = self.loss_func_bce(ia_pre_ratings['score'], self.target2d)
+                    elif config.SSMTPIAA_loss == 'BCE_SCORE_REG':
+                        if re_init:
+                            ia_pre_loss = \
+                                loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d, self.loss_func_bce.cpu(),
+                                                                self.filters.cpu(), gamma=self.gamma)
+                        else:
+                            ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
+                                                                          self.loss_func_bce.cpu(), self.filters.cpu(),
+                                                                          initial_filters=user_preset_filters, gamma=self.gamma)
+                    elif config.SSMTPIAA_loss == 'COMPOSITE':
+                        if score_target is None:
+                            score_target = min(ia_pre_ratings['score'].item() + 0.3, 1.0)
+                            #print('score_target is: ' + str(score_target))
+                            score_target = torch.FloatTensor([[score_target]]).to(self.device)
+                        if re_init:
+                            score_loss = \
+                                loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                self.loss_func_mse.cpu(),
+                                                                self.filters.cpu(), gamma=self.gamma)
+                        else:
+                            score_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                          self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                          initial_filters=user_preset_filters,
+                                                                          gamma=self.gamma)
+
+                        ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
+                        styles_loss = self.loss_func_mse(ratings,
+                                                         torch.zeros(ratings.size()[1]).to(self.device))
+
+                        composite_loss = score_loss * torch.pow(ia_pre_ratings['score'], config.composite_pow) + \
+                                         styles_loss * (1 - torch.pow(ia_pre_ratings['score'], config.composite_pow))
+
+                        if config.composite_balance == 0.0:
+                            ia_pre_loss = composite_loss
+                        elif config.composite_balance < 0:
+                            ia_pre_loss = score_loss * abs(config.composite_balance) + \
+                                          composite_loss * (1 - abs(config.composite_balance))
+                        else:
+                            ia_pre_loss = composite_loss * (1 - abs(config.composite_balance)) + \
+                                          styles_loss * config.composite_balance
+                    else:
+                        raise Exception('Illegal SSMTPIAA_loss')
+
+                if ssmtpiaa_fine:
+                    # IA_fine loss
+                    ia_fine_loss = self.loss_func_mse(weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length), self.target0d)
+
+                # Append each score value to their respective list for later visualization
+                # Append each loss value to their respective list for later visualization
+                if nima_vgg16:
+                    nima_vgg16_scores.append(weighted_mean(nima_vgg16_distr_of_ratings, self.weights, self.length).item())
+                    nima_vgg16_losses.append(nima_vgg16_loss.item())
+                if nima_mobilenetv2:
+                    nima_mobilenetv2_scores.append(
+                        weighted_mean(nima_mobilenetv2_distr_of_ratings, self.weights, self.length).item())
+                    nima_mobilenetv2_losses.append(nima_mobilenetv2_loss.item())
+                if ssmtpiaa:
+                    ia_pre_scores.append(ia_pre_ratings['score'].item())
+                    ia_pre_losses.append(ia_pre_loss.item())
+                if ssmtpiaa_fine:
+                    ia_fine_scores.append(weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length).item())
+                    ia_fine_losses.append(ia_fine_loss.item())
+
+                if config.assessor == 'NIMA_VGG16':
+                    print('using NIMA_VGG16 with loss of: ' + str(nima_vgg16_loss))
+                    loss = nima_vgg16_loss
+                elif config.assessor == 'NIMA_mobilenetv2':
+                    print('using NIMA_mobilenetv2 with loss of: ' + str(nima_mobilenetv2_loss))
+                    loss = nima_mobilenetv2_loss
+                elif config.assessor == 'SSMTPIAA':
+                    print('using IA_pre with loss of: ' + str(ia_pre_loss.item()) + 'and score of: ' + str(ia_pre_ratings['score'].item()))
+                    loss = ia_pre_loss
+                elif config.assessor == 'SSMTPIAA_fine':
+                    print('using IA_fine with loss of: ' + str(ia_fine_loss))
+                    loss = ia_fine_loss
                 else:
-                    raise Exception('Illegal SSMTPIAA_loss')
+                    raise Exception("Invalid Assessor in config.assessor: " + config.assessor)
 
-            if ssmtpiaa_fine:
-                # IA_fine loss
-                ia_fine_loss = self.loss_func_mse(weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length), self.target0d)
+                loss_buffer.append(loss.item())
 
-            # Append each score value to their respective list for later visualization
-            # Append each loss value to their respective list for later visualization
-            if nima_vgg16:
-                nima_vgg16_scores.append(weighted_mean(nima_vgg16_distr_of_ratings, self.weights, self.length).item())
-                nima_vgg16_losses.append(nima_vgg16_loss.item())
-            if nima_mobilenetv2:
-                nima_mobilenetv2_scores.append(
-                    weighted_mean(nima_mobilenetv2_distr_of_ratings, self.weights, self.length).item())
-                nima_mobilenetv2_losses.append(nima_mobilenetv2_loss.item())
-            if ssmtpiaa:
-                ia_pre_scores.append(ia_pre_ratings['score'].item())
-                ia_pre_losses.append(ia_pre_loss.item())
-            if ssmtpiaa_fine:
-                ia_fine_scores.append(weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length).item())
-                ia_fine_losses.append(ia_fine_loss.item())
+                loss.backward()
+                print('Learning rate = ' + str(self.get_lr()))
+                self.optimizer.step()
 
-            if config.assessor == 'NIMA_VGG16':
-                print('using NIMA_VGG16 with loss of: ' + str(nima_vgg16_loss))
-                loss = nima_vgg16_loss
-            elif config.assessor == 'NIMA_mobilenetv2':
-                print('using NIMA_mobilenetv2 with loss of: ' + str(nima_mobilenetv2_loss))
-                loss = nima_mobilenetv2_loss
-            elif config.assessor == 'SSMTPIAA':
-                print('using IA_pre with loss of: ' + str(ia_pre_loss.item()) + 'and score of: ' + str(ia_pre_ratings['score'].item()))
-                loss = ia_pre_loss
-            elif config.assessor == 'SSMTPIAA_fine':
-                print('using IA_fine with loss of: ' + str(ia_fine_loss))
-                loss = ia_fine_loss
-            else:
-                raise Exception("Invalid Assessor in config.assessor: " + config.assessor)
+                if not headless_mode:
+                    filters_for_queue = [self.filters[x].item() for x in range(8)]
+                    self.queue.put(i + 1)
+                    self.queue.put(filters_for_queue)
+        else:  # CMA optimizer
+            with torch.no_grad():
 
-            loss_buffer.append(loss.item())
+                # Determine Score Target
+                if fixFilters:
+                    _, _, _, ia_pre_ratings, \
+                    _ = self.forward(image_tensor_transformed, image_tensor_transformed_jan,
+                                     fixedFilters=initial_filter_values,
+                                     headless_mode=True,
+                                     nima_vgg16=False,
+                                     nima_mobilenetv2=False,
+                                     ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=False)
+                else:
+                    _, _, _, ia_pre_ratings, \
+                    _ = self.forward(image_tensor_transformed, image_tensor_transformed_jan,
+                                     headless_mode=True,
+                                     nima_vgg16=False,
+                                     nima_mobilenetv2=False,
+                                     ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=False)
+                score_target = min(ia_pre_ratings['score'].item() + 0.3, 1.0)
+                print('score_target is: ' + str(score_target))
+                score_target = torch.FloatTensor([[score_target]]).to(self.device)
 
-            loss.backward()
-            print('Learning rate = ' + str(self.get_lr()))
-            self.optimizer.step()
+                for i in range(epochs):
+                    if headless_mode is False and thread_stopEvent.is_set():
+                        break
 
-            if not headless_mode:
-                filters_for_queue = [self.filters[x].item() for x in range(8)]
-                self.queue.put(i + 1)
-                self.queue.put(filters_for_queue)
+                    if config.automatic_epoch and loss_buffer.get_std_dev() is not None:
+                        if max(loss_buffer.data) - min(loss_buffer.data) < 0.035:
+                            break
+
+                    print_msg("Iteration {} of {}".format(i, epochs), 2)
+
+                    candidates = self.optimizer.ask()
+
+                    losses = []
+                    for candidate in candidates:
+                        self.filters = (torch.tensor(candidate)/100).to(self.device)
+
+                        if fixFilters:
+                            enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, \
+                            ia_fine_distr_of_ratings = self.forward(image_tensor_transformed, image_tensor_transformed_jan,
+                                                                    fixedFilters=initial_filter_values,
+                                                                    headless_mode=True,
+                                                                    nima_vgg16=nima_vgg16,
+                                                                    nima_mobilenetv2=nima_mobilenetv2,
+                                                                    ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
+                        else:
+                            enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, \
+                            ia_fine_distr_of_ratings = self.forward(image_tensor_transformed, image_tensor_transformed_jan,
+                                                                    headless_mode=True,
+                                                                    nima_vgg16=nima_vgg16,
+                                                                    nima_mobilenetv2=nima_mobilenetv2,
+                                                                    ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
+
+                        # NIMA_VGG16 loss, either using MSE or l2 loss with target2d distribution (legacy_NICER_loss_for_NIMA_VGG16)
+                        if nima_vgg16:
+                            if re_init:
+                                # new for each image
+                                nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(),
+                                                                              self.filters.cpu(),
+                                                                              gamma=self.gamma)
+                            else:
+                                nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(),
+                                                                              self.filters.cpu(),
+                                                                              initial_filters=user_preset_filters,
+                                                                              gamma=self.gamma)
+                        if nima_mobilenetv2:
+                            # NIMA_mobilenetv2 loss
+                            nima_mobilenetv2_loss = self.loss_func_mse(
+                                weighted_mean(nima_mobilenetv2_distr_of_ratings, self.weights, self.length), self.target0d)
+
+                        if ssmtpiaa:
+                            # IA_pre loss
+                            if config.SSMTPIAA_loss == 'MSE_SCORE_REG':
+                                if re_init:
+                                    ia_pre_loss = \
+                                        loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
+                                                                        self.loss_func_mse,
+                                                                        self.filters, gamma=self.gamma)
+                                else:
+                                    ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
+                                                                                  self.loss_func_mse, self.filters,
+                                                                                  initial_filters=user_preset_filters,
+                                                                                  gamma=self.gamma)
+                            elif config.SSMTPIAA_loss == 'ADAPTIVE_MSE_SCORE_REG':
+                                if score_target is None:
+                                    score_target = min(ia_pre_ratings['score'].item() + 0.3, 1.0)
+                                    score_target = torch.FloatTensor([[score_target]]).to(self.device)
+                                if re_init:
+                                    ia_pre_loss = \
+                                        loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                        self.loss_func_mse.cpu(),
+                                                                        self.filters.cpu(), gamma=self.gamma)
+                                else:
+                                    ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                                  self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                                  initial_filters=user_preset_filters,
+                                                                                  gamma=self.gamma)
+                            elif config.SSMTPIAA_loss == 'MOVING_MSE_SCORE_REG':
+                                score_target = min(ia_pre_ratings['score'].item() + 0.2, 1.0)
+                                score_target = torch.FloatTensor([[score_target]]).to(self.device)
+                                if re_init:
+                                    ia_pre_loss = \
+                                        loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                        self.loss_func_mse.cpu(),
+                                                                        self.filters.cpu(), gamma=self.gamma)
+                                else:
+                                    ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                                  self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                                  initial_filters=user_preset_filters,
+                                                                                  gamma=self.gamma)
+                            elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES':
+                                ia_pre_loss = self.loss_func_mse(ia_pre_ratings['styles_change_strength'],
+                                                                 torch.zeros(
+                                                                     ia_pre_ratings['styles_change_strength'].size()[1]).to(
+                                                                     self.device))
+                            elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_REG':
+                                if re_init:
+                                    ia_pre_loss = \
+                                        loss_with_filter_regularization((ia_pre_ratings['styles_change_strength'] * 1.5).cpu(),
+                                                                        torch.zeros(
+                                                                            ia_pre_ratings['styles_change_strength'].size()[1]),
+                                                                        self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                        gamma=self.gamma)
+                                else:
+                                    ia_pre_loss = \
+                                        loss_with_filter_regularization((ia_pre_ratings['styles_change_strength'] * 1.5).cpu(),
+                                                                        torch.zeros(
+                                                                            ia_pre_ratings['styles_change_strength'].size()[1]),
+                                                                        self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                        initial_filters=user_preset_filters, gamma=self.gamma)
+                            elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_HINGE':
+                                ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
+                                ia_pre_loss = self.loss_func_mse(ratings,
+                                                                 torch.zeros(ratings.size()[1]).to(self.device))
+                            elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_HINGE_REG':
+                                ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
+                                if re_init:
+                                    ia_pre_loss = \
+                                        loss_with_filter_regularization((ratings * 1.5).cpu(),
+                                                                        torch.zeros(ratings.size()[1]),
+                                                                        self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                        gamma=self.gamma)
+                                else:
+                                    ia_pre_loss = \
+                                        loss_with_filter_regularization((ratings * 1.5).cpu(),
+                                                                        torch.zeros(ratings.size()[1]),
+                                                                        self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                        initial_filters=user_preset_filters, gamma=self.gamma)
+                            elif config.SSMTPIAA_loss == 'BCE_SCORE':
+                                ia_pre_loss = self.loss_func_bce(ia_pre_ratings['score'], self.target2d)
+                            elif config.SSMTPIAA_loss == 'BCE_SCORE_REG':
+                                if re_init:
+                                    ia_pre_loss = \
+                                        loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
+                                                                        self.loss_func_bce.cpu(),
+                                                                        self.filters.cpu(), gamma=self.gamma)
+                                else:
+                                    ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
+                                                                                  self.loss_func_bce.cpu(), self.filters.cpu(),
+                                                                                  initial_filters=user_preset_filters,
+                                                                                  gamma=self.gamma)
+                            elif config.SSMTPIAA_loss == 'COMPOSITE':
+                                if score_target is None:
+                                    score_target = min(ia_pre_ratings['score'].item() + 0.3, 1.0)
+                                    # print('score_target is: ' + str(score_target))
+                                    score_target = torch.FloatTensor([[score_target]]).to(self.device)
+                                if re_init:
+                                    score_loss = \
+                                        loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                        self.loss_func_mse.cpu(),
+                                                                        self.filters.cpu(), gamma=self.gamma)
+                                else:
+                                    score_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                                 self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                                 initial_filters=user_preset_filters,
+                                                                                 gamma=self.gamma)
+
+                                ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
+                                styles_loss = self.loss_func_mse(ratings,
+                                                                 torch.zeros(ratings.size()[1]).to(self.device))
+
+                                composite_loss = score_loss * torch.pow(ia_pre_ratings['score'], config.composite_pow) + \
+                                                 styles_loss * (1 - torch.pow(ia_pre_ratings['score'], config.composite_pow))
+
+                                if config.composite_balance == 0.0:
+                                    ia_pre_loss = composite_loss
+                                elif config.composite_balance < 0:
+                                    ia_pre_loss = score_loss * abs(config.composite_balance) + \
+                                                  composite_loss * (1 - abs(config.composite_balance))
+                                else:
+                                    ia_pre_loss = composite_loss * (1 - abs(config.composite_balance)) + \
+                                                  styles_loss * config.composite_balance
+                            else:
+                                raise Exception('Illegal SSMTPIAA_loss')
+
+                            if ssmtpiaa_fine:
+                                # IA_fine loss
+                                ia_fine_loss = self.loss_func_mse(
+                                    weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length), self.target0d)
+
+                            if config.assessor == 'NIMA_VGG16':
+                                loss = nima_vgg16_loss
+                            elif config.assessor == 'NIMA_mobilenetv2':
+                                loss = nima_mobilenetv2_loss
+                            elif config.assessor == 'SSMTPIAA':
+                                loss = ia_pre_loss
+                            elif config.assessor == 'SSMTPIAA_fine':
+                                loss = ia_fine_loss
+                            else:
+                                raise Exception("Invalid Assessor in config.assessor: " + config.assessor)
+
+                            losses.append(loss.item())
+
+                    self.optimizer.tell(candidates, losses)
+
+                    # update filters with the best solution of this iteration
+                    self.filters = (torch.tensor(self.optimizer.best.x)/100).to(self.device)
+
+                    print(self.filters)
+
+                    # redo forward for visualization
+
+                    if fixFilters:
+                        enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, \
+                        ia_fine_distr_of_ratings = self.forward(image_tensor_transformed, image_tensor_transformed_jan,
+                                                                fixedFilters=initial_filter_values,
+                                                                headless_mode=headless_mode,
+                                                                nima_vgg16=nima_vgg16,
+                                                                nima_mobilenetv2=nima_mobilenetv2,
+                                                                ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
+                    else:
+                        enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, \
+                        ia_fine_distr_of_ratings = self.forward(image_tensor_transformed, image_tensor_transformed_jan,
+                                                                headless_mode=headless_mode,
+                                                                nima_vgg16=nima_vgg16,
+                                                                nima_mobilenetv2=nima_mobilenetv2,
+                                                                ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
+
+                    # NIMA_VGG16 loss, either using MSE or l2 loss with target2d distribution (legacy_NICER_loss_for_NIMA_VGG16)
+                    if nima_vgg16:
+                        if re_init:
+                            # new for each image
+                            nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(),
+                                                                          self.filters.cpu(),
+                                                                          gamma=self.gamma)
+                        else:
+                            nima_vgg16_loss = loss_with_l2_regularization(nima_vgg16_distr_of_ratings.cpu(),
+                                                                          self.filters.cpu(),
+                                                                          initial_filters=user_preset_filters,
+                                                                          gamma=self.gamma)
+                    if nima_mobilenetv2:
+                        # NIMA_mobilenetv2 loss
+                        nima_mobilenetv2_loss = self.loss_func_mse(
+                            weighted_mean(nima_mobilenetv2_distr_of_ratings, self.weights, self.length), self.target0d)
+
+                    if ssmtpiaa:
+                        # IA_pre loss
+                        if config.SSMTPIAA_loss == 'MSE_SCORE_REG':
+                            if re_init:
+                                ia_pre_loss = \
+                                    loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
+                                                                    self.loss_func_mse,
+                                                                    self.filters, gamma=self.gamma)
+                            else:
+                                ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
+                                                                              self.loss_func_mse, self.filters,
+                                                                              initial_filters=user_preset_filters,
+                                                                              gamma=self.gamma)
+                        elif config.SSMTPIAA_loss == 'ADAPTIVE_MSE_SCORE_REG':
+                            if score_target is None:
+                                score_target = min(ia_pre_ratings['score'].item() + 0.3, 1.0)
+                                print('score_target is: ' + str(score_target))
+                                score_target = torch.FloatTensor([[score_target]]).to(self.device)
+                            if re_init:
+                                ia_pre_loss = \
+                                    loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                    self.loss_func_mse.cpu(),
+                                                                    self.filters.cpu(), gamma=self.gamma)
+                            else:
+                                ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                              self.loss_func_mse.cpu(),
+                                                                              self.filters.cpu(),
+                                                                              initial_filters=user_preset_filters,
+                                                                              gamma=self.gamma)
+                        elif config.SSMTPIAA_loss == 'MOVING_MSE_SCORE_REG':
+                            score_target = min(ia_pre_ratings['score'].item() + 0.2, 1.0)
+                            score_target = torch.FloatTensor([[score_target]]).to(self.device)
+                            if re_init:
+                                ia_pre_loss = \
+                                    loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                    self.loss_func_mse.cpu(),
+                                                                    self.filters.cpu(), gamma=self.gamma)
+                            else:
+                                ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                              self.loss_func_mse.cpu(),
+                                                                              self.filters.cpu(),
+                                                                              initial_filters=user_preset_filters,
+                                                                              gamma=self.gamma)
+                        elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES':
+                            ia_pre_loss = self.loss_func_mse(ia_pre_ratings['styles_change_strength'],
+                                                             torch.zeros(
+                                                                 ia_pre_ratings['styles_change_strength'].size()[1]).to(
+                                                                 self.device))
+                        elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_REG':
+                            if re_init:
+                                ia_pre_loss = \
+                                    loss_with_filter_regularization(
+                                        (ia_pre_ratings['styles_change_strength'] * 1.5).cpu(),
+                                        torch.zeros(
+                                            ia_pre_ratings['styles_change_strength'].size()[1]),
+                                        self.loss_func_mse.cpu(), self.filters.cpu(),
+                                        gamma=self.gamma)
+                            else:
+                                ia_pre_loss = \
+                                    loss_with_filter_regularization(
+                                        (ia_pre_ratings['styles_change_strength'] * 1.5).cpu(),
+                                        torch.zeros(
+                                            ia_pre_ratings['styles_change_strength'].size()[1]),
+                                        self.loss_func_mse.cpu(), self.filters.cpu(),
+                                        initial_filters=user_preset_filters, gamma=self.gamma)
+                        elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_HINGE':
+                            ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
+                            ia_pre_loss = self.loss_func_mse(ratings,
+                                                             torch.zeros(ratings.size()[1]).to(self.device))
+                        elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_HINGE_REG':
+                            ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
+                            if re_init:
+                                ia_pre_loss = \
+                                    loss_with_filter_regularization((ratings * 1.5).cpu(),
+                                                                    torch.zeros(ratings.size()[1]),
+                                                                    self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                    gamma=self.gamma)
+                            else:
+                                ia_pre_loss = \
+                                    loss_with_filter_regularization((ratings * 1.5).cpu(),
+                                                                    torch.zeros(ratings.size()[1]),
+                                                                    self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                    initial_filters=user_preset_filters,
+                                                                    gamma=self.gamma)
+                        elif config.SSMTPIAA_loss == 'BCE_SCORE':
+                            ia_pre_loss = self.loss_func_bce(ia_pre_ratings['score'], self.target2d)
+                        elif config.SSMTPIAA_loss == 'BCE_SCORE_REG':
+                            if re_init:
+                                ia_pre_loss = \
+                                    loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
+                                                                    self.loss_func_bce.cpu(),
+                                                                    self.filters.cpu(), gamma=self.gamma)
+                            else:
+                                ia_pre_loss = loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
+                                                                              self.loss_func_bce.cpu(),
+                                                                              self.filters.cpu(),
+                                                                              initial_filters=user_preset_filters,
+                                                                              gamma=self.gamma)
+                        elif config.SSMTPIAA_loss == 'COMPOSITE':
+                            if score_target is None:
+                                score_target = min(ia_pre_ratings['score'].item() + 0.3, 1.0)
+                                # print('score_target is: ' + str(score_target))
+                                score_target = torch.FloatTensor([[score_target]]).to(self.device)
+                            if re_init:
+                                score_loss = \
+                                    loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                    self.loss_func_mse.cpu(),
+                                                                    self.filters.cpu(), gamma=self.gamma)
+                            else:
+                                score_loss = loss_with_filter_regularization(ia_pre_ratings['score'], score_target,
+                                                                             self.loss_func_mse.cpu(),
+                                                                             self.filters.cpu(),
+                                                                             initial_filters=user_preset_filters,
+                                                                             gamma=self.gamma)
+
+                            ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
+                            styles_loss = self.loss_func_mse(ratings,
+                                                             torch.zeros(ratings.size()[1]).to(self.device))
+
+                            composite_loss = score_loss * torch.pow(ia_pre_ratings['score'], config.composite_pow) + \
+                                             styles_loss * (
+                                                         1 - torch.pow(ia_pre_ratings['score'], config.composite_pow))
+
+                            if config.composite_balance == 0.0:
+                                ia_pre_loss = composite_loss
+                            elif config.composite_balance < 0:
+                                ia_pre_loss = score_loss * abs(config.composite_balance) + \
+                                              composite_loss * (1 - abs(config.composite_balance))
+                            else:
+                                ia_pre_loss = composite_loss * (1 - abs(config.composite_balance)) + \
+                                              styles_loss * config.composite_balance
+                        else:
+                            raise Exception('Illegal SSMTPIAA_loss')
+
+                    if ssmtpiaa_fine:
+                        # IA_fine loss
+                        ia_fine_loss = self.loss_func_mse(
+                            weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length), self.target0d)
+
+                    if config.assessor == 'NIMA_VGG16':
+                        print('using NIMA_VGG16 with loss of: ' + str(nima_vgg16_loss))
+                        loss = nima_vgg16_loss
+                    elif config.assessor == 'NIMA_mobilenetv2':
+                        print('using NIMA_mobilenetv2 with loss of: ' + str(nima_mobilenetv2_loss))
+                        loss = nima_mobilenetv2_loss
+                    elif config.assessor == 'SSMTPIAA':
+                        print('using IA_pre with loss of: ' + str(ia_pre_loss.item()) + 'and score of: ' + str(
+                            ia_pre_ratings['score'].item()))
+                        loss = ia_pre_loss
+                    elif config.assessor == 'SSMTPIAA_fine':
+                        print('using IA_fine with loss of: ' + str(ia_fine_loss))
+                        loss = ia_fine_loss
+                    else:
+                        raise Exception("Invalid Assessor in config.assessor: " + config.assessor)
+
+                    # Append each score value to their respective list for later visualization
+                    # Append each loss value to their respective list for later visualization
+                    if nima_vgg16:
+                        nima_vgg16_scores.append(
+                            weighted_mean(nima_vgg16_distr_of_ratings, self.weights, self.length).item())
+                        nima_vgg16_losses.append(nima_vgg16_loss.item())
+                    if nima_mobilenetv2:
+                        nima_mobilenetv2_scores.append(
+                            weighted_mean(nima_mobilenetv2_distr_of_ratings, self.weights, self.length).item())
+                        nima_mobilenetv2_losses.append(nima_mobilenetv2_loss.item())
+                    if ssmtpiaa:
+                        ia_pre_scores.append(ia_pre_ratings['score'].item())
+                        ia_pre_losses.append(ia_pre_loss.item())
+                    if ssmtpiaa_fine:
+                        ia_fine_scores.append(weighted_mean(ia_fine_distr_of_ratings, self.weights, self.length).item())
+                        ia_fine_losses.append(ia_fine_loss.item())
+
+                    loss_buffer.append(loss.item())
+
+                    if not headless_mode:
+                        filters_for_queue = [self.filters[x].item() for x in range(8)]
+                        self.queue.put(i + 1)
+                        self.queue.put(filters_for_queue)
 
         if headless_mode is True or not thread_stopEvent.is_set():
             print_msg("Optimization for %d epochs took %.3fs" % (epochs, time.time() - start_time), 2)
@@ -579,6 +1021,8 @@ class NICER(nn.Module):
             self.optimizer = torch.optim.SGD(params=[self.filters], lr=optim_lr, momentum=config.optim_momentum)
         elif config.optim == 'adam':
             self.optimizer = torch.optim.Adam(params=[self.filters], lr=optim_lr)
+        elif config.optim == 'cma':
+            _ = 0
         else:
             error_callback('optimizer')
 
