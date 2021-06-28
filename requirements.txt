@@ -20,3 +20,4 @@ tifffile==2021.4.8
 tqdm==4.60.0
 future~=0.18.2
 jinja2~=2.11.3
+cma
