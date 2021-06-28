@@ -34,10 +34,10 @@ padding = True
 
 gamma = 0.1
 epochs = 50
-optim = 'cma'                                      # also supports adam
+optim = 'adam'                                      # also supports adam, cma
 optim_lr = 0.025
 optim_momentum = 0.9
-cma_sigma = 2
+cma_sigma = 5
 cma_population = 15
 hinge_val = 0.15                                    # value for hinge loss
 composite_pow = 1.75                 # Score influence on balance between MSE_SCORE_REG and MSE_STYLE_CHANGES_HINGE_REG
