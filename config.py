@@ -9,7 +9,7 @@ use_auto_brightness_normalizer = False             # toggle to activate ABN
 valid_assesors = ['NIMA_VGG16', 'NIMA_mobilenetv2', 'SSMTPIAA', 'SSMTPIAA_fine']
 assessor = 'SSMTPIAA'                            # Which assessor network should be used by default
 
-valid_SSMTPIAA_losses = ['MSE_SCORE_REG', 'ADAPTIVE_MSE_SCORE_REG', 'MOVING_MSE_SCORE_REG',
+valid_SSMTPIAA_losses = ['MSE_SCORE_REG', 'MSE_SCORE_VISUAL_REG', 'ADAPTIVE_MSE_SCORE_REG', 'MOVING_MSE_SCORE_REG',
                          'BCE_SCORE', 'BCE_SCORE_REG',
                          'MSE_STYLE_CHANGES', 'MSE_STYLE_CHANGES_REG',
                          'MSE_STYLE_CHANGES_HINGE', 'MSE_STYLE_CHANGES_HINGE_REG',
@@ -21,20 +21,20 @@ automatic_epoch_target = 0.002
 
 save_animation = False                              # saves animation of the network editing
 save_animation_with_extra_info = False              # saves animation of the network editing with extra loss and score values
-save_composite_animation = True                    # saves animation of the network editing with animated graphs
-save_loss_graph = True                             # saves loss graph
-save_score_graph = True                            # saves score graph
+save_composite_animation = False                    # saves animation of the network editing with animated graphs
+save_loss_graph = False                             # saves loss graph
+save_score_graph = False                            # saves score graph
 animate_graphs = False                              # saves animated versions of graphs
 
-choose_save_name_and_folder = False                # able to specify image output folder and name
+choose_save_name_and_folder = True                # able to specify image output folder and name
 
 debug_image_pipeline = False
 padding = True
 
 
 gamma = 0.1
-epochs = 20
-optim = 'nevergrad'                                      # also supports adam, cma and nevergrad(meta)
+epochs = 50
+optim = 'sgd'                                      # also supports adam, cma and nevergrad(meta)
 optim_lr = 0.025
 optim_momentum = 0.9
 cma_sigma = 5
@@ -45,7 +45,7 @@ composite_balance = 0             # Balance between MSE_SCORE_REG COMPOSITE and 
 
 # ----- image parameters:
 
-rescale = True
+rescale = False
 final_size = 1920                                   # final size when saving. Attention: bigger imgs require more memory
 supported_extensions = ['jpg', 'jpeg', 'png']
 supported_extensions_raw = ['dng']                  # legacy, deprecated

@@ -498,7 +498,7 @@ class NicerGui:
             variable.set(0)
 
         self.epochBox.delete(0, 'end')
-        self.epochBox.insert(-1, '50')
+        self.epochBox.insert(-1, str(config.epochs))
         self.threadKiller.clear()
 
         # self.tk_img_panel_one.place_forget()       # leave the current image, reset only filters and edited img

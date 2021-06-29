@@ -14,12 +14,14 @@ import config
 from autobright import normalize_brightness
 from neural_models import error_callback, CAN, NIMA_VGG
 from utils import nima_transform, print_msg, loss_with_l2_regularization, loss_with_filter_regularization, \
-    weighted_mean, jans_normalization, jans_transform, jans_padding, tensor_debug, RingBuffer, hinge
+    loss_with_visual_regularization, weighted_mean, jans_normalization, jans_transform, jans_padding, tensor_debug, \
+    RingBuffer, hinge
 
 from IA_folder.old.utils import mapping
 from IA_folder.IA import IA
 from IA2NIMA.NIMA import NIMA
 
+from skimage import img_as_float
 
 class NICER(nn.Module):
 
@@ -301,7 +303,8 @@ class NICER(nn.Module):
         else:
             return None
 
-    def calculate_ssmtpiaa_loss(self, ia_pre_ratings, score_target, user_preset_filters, re_init, ssmtpiaa):
+    def calculate_ssmtpiaa_loss(self, ia_pre_ratings, score_target, user_preset_filters, img, img_enhanced, re_init,
+                                ssmtpiaa):
         if ssmtpiaa:
             # IA_pre loss
             if config.SSMTPIAA_loss == 'MSE_SCORE_REG':
@@ -312,6 +315,10 @@ class NICER(nn.Module):
                     return loss_with_filter_regularization(ia_pre_ratings['score'], self.target2d,
                                                            self.loss_func_mse, self.filters,
                                                            initial_filters=user_preset_filters, gamma=self.gamma)
+            elif config.SSMTPIAA_loss == 'MSE_SCORE_VISUAL_REG':
+                return loss_with_visual_regularization(ia_pre_ratings['score'], self.target2d, self.loss_func_mse, img,
+                                                       img_enhanced, gamma=self.gamma)
+
             elif config.SSMTPIAA_loss == 'ADAPTIVE_MSE_SCORE_REG':
                 score_target = torch.FloatTensor([[score_target]]).to(self.device)
                 if re_init:
@@ -420,7 +427,7 @@ class NICER(nn.Module):
             return None
 
     def calculate_losses(self, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings,
-                         score_target, ia_fine_distr_of_ratings, user_preset_filters, re_init,
+                         score_target, ia_fine_distr_of_ratings, img, img_enhanced, user_preset_filters, re_init,
                          nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine):
         nima_vgg16_loss = self.calculate_nima_vgg16_loss(nima_vgg16_distr_of_ratings, user_preset_filters,
                                                          re_init, nima_vgg16)
@@ -428,7 +435,7 @@ class NICER(nn.Module):
         nima_mobilenetv2_loss = self.calculate_nima_mobilenet_v2_loss(nima_mobilenetv2_distr_of_ratings,
                                                                       nima_mobilenetv2)
 
-        ia_pre_loss = self.calculate_ssmtpiaa_loss(ia_pre_ratings, score_target, user_preset_filters,
+        ia_pre_loss = self.calculate_ssmtpiaa_loss(ia_pre_ratings, score_target, user_preset_filters, img, img_enhanced,
                                                    re_init, ssmtpiaa)
 
         ia_fine_loss = self.calculate_ssmtpiaa_fine_loss(ia_fine_distr_of_ratings, ssmtpiaa_fine)
@@ -540,6 +547,12 @@ class NICER(nn.Module):
         print_msg("Starting optimization", 2)
         start_time = time.time()
 
+        if config.SSMTPIAA_loss == 'MSE_SCORE_VISUAL_REG':
+            img = np.transpose(img_as_float(image_tensor_transformed.numpy()))
+        else:
+            img = None
+
+
         if config.optim == 'sgd' or config.optim == 'adam':
             for i in range(epochs):
                 if headless_mode is False and thread_stopEvent.is_set():
@@ -563,11 +576,17 @@ class NICER(nn.Module):
                     if score_target is None:
                         score_target = min(ia_pre_ratings['score'].item() + 0.3, 1.0)
                         print('score_target is: ' + str(score_target))
+                    if config.SSMTPIAA_loss == 'MSE_SCORE_VISUAL_REG':
+                        img_enhanced = np.transpose(img_as_float(enhanced_img.cpu().detach().squeeze().numpy()))
+                    else:
+                        img_enhanced = None
+                else:
+                    img_enhanced = None
 
                 nima_vgg16_loss, nima_mobilenetv2_loss, ia_pre_loss, ia_fine_loss = self.calculate_losses(
                     nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, score_target,
-                    ia_fine_distr_of_ratings, user_preset_filters, re_init, nima_vgg16, nima_mobilenetv2, ssmtpiaa,
-                    ssmtpiaa_fine
+                    ia_fine_distr_of_ratings, img, img_enhanced, user_preset_filters, re_init,
+                    nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine
                 )
 
                 self.append_to_lists(nima_vgg16_scores, nima_mobilenetv2_distr_of_ratings,
@@ -589,6 +608,13 @@ class NICER(nn.Module):
                 self.optimizer.step()
 
                 self.put_filters_in_queue(i, headless_mode)
+
+                '''
+                ssim_img_enhanced = np.transpose(img_as_float(enhanced_img.cpu().detach().squeeze().numpy()))
+                print(ssim_img_enhanced.shape)
+
+                print(ssim(ssim_img_in, ssim_img_enhanced, multichannel=True))
+                '''
 
         elif config.optim == 'cma':  # CMA optimizer
             with torch.no_grad():

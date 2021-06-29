@@ -1,6 +1,11 @@
 import pickle
+import random
 import json
 import pandas as pd
+import numpy as np
+
+from skimage.metrics import structural_similarity as ssim
+from skimage import img_as_float
 
 from dataset import Pexels
 from utils import nima_transform, jans_transform, weighted_mean
@@ -191,6 +196,82 @@ def evaluate_editing_losses_pexels(nicer, output_file, mode, losses: list, limit
 
             # Evaluate edited image and save scores
             evaluate_image(edited_image, nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix=loss)
+
+            # Export image with rating history
+            edited_image.save('./analysis/results/' + output_file + '/' + item['image_id'].split('.')[0] + loss + '.' + item['image_id'].split('.')[1])
+
+            with open("./analysis/results/" + output_file + '/' + item['image_id'].split('.')[0] + loss + ".json", "w") as outfile:
+                json.dump(graph_data, outfile)
+
+        if i % 50 == 0:
+            write_dict_to_file(results, output_file + str(i),
+                               path="./analysis/results/" + output_file + '_graph_data' + "/")
+            for key in results:
+                results[key] = []
+
+    if results['image_id']:
+        write_dict_to_file(results, output_file + str(limit),
+                           path="./analysis/results/" + output_file + '_graph_data' + "/")
+
+def evaluate_editing_recovery_pexels(nicer, output_file, mode, losses: list, limit=None,
+                            nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True):
+    results = get_results_dict(['orig'] + losses, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine)
+    results['dist_filters'] = []
+    results['distance_to_orig'] = []
+
+    pexels = Pexels(mode=mode)
+
+    if limit is None:
+        limit = len(pexels)
+
+    for i in range(limit):
+        item = pexels.__getitem__(i)
+        print('processing ' + str(item['image_id']) + ' in iteration ' + str(i))
+        results['image_id'].append(item['image_id'])
+
+        # Evaluate unedited image and save scores to dictionary and a copy of the image to disk
+        nicer.config.SSMTPIAA_loss = 'MSE_SCORE_REG'
+        evaluate_image(item['img'], nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='orig')
+        item['img'].save('./analysis/results/' + output_file + '/' + item['image_id'])
+
+        img_original = img_as_float(np.array(item['img']))
+        print(img_original.shape)
+
+
+        # Create distorted version
+        min, max = -0.3, 0.3
+        filters = [random.uniform(min, max), random.uniform(min, max), random.uniform(min, max),
+                   random.uniform(min, max),
+                   random.uniform(min, max), random.uniform(min, max), random.uniform(min, max),
+                   random.uniform(min, max)]
+        results['dist_filters'].append(filters)
+        distorted_image = Image.fromarray(nicer.single_image_pass_can(item['img'], abn=False, filterList=filters))
+
+        distorted_image.save('./analysis/results/' + output_file + '/' + item['image_id'].split('.')[0] + 'distorted' +
+                             '.' + item['image_id'].split('.')[1])
+
+
+
+        for loss in losses:
+            print(f"editing {item['image_id']} using {loss} in iteration {i}")
+
+            # Set loss
+            nicer.config.SSMTPIAA_loss = loss
+
+            # Edit image
+            edited_image, graph_data = nicer.enhance_image(distorted_image, re_init=True, headless_mode=True,
+                                                           nima_vgg16=nima_vgg16, nima_mobilenetv2=nima_mobilenetv2,
+                                                           ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
+            img_enhanced = img_as_float(np.array(edited_image))
+            print(img_enhanced.shape)
+            edited_image = Image.fromarray(edited_image)
+
+            # Evaluate edited image and save scores
+            evaluate_image(edited_image, nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix=loss)
+
+            similarity = 1 - ssim(img_original, img_enhanced, multichannel=True)
+            print(similarity)
+            results['distance_to_orig'].append(similarity)
 
             # Export image with rating history
             edited_image.save('./analysis/results/' + output_file + '/' + item['image_id'].split('.')[0] + loss + '.' + item['image_id'].split('.')[1])

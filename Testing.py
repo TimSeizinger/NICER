@@ -1,26 +1,14 @@
-#from utils import hinge_loss
+import sklearn
 import torch
-import cma
-import nevergrad as ng
+import numpy as np
 
-tensor = torch.randn(4) * 10
+param_grid = [{'optim_lr': [0.15, 0.20, 0.25, 0.30, 0.35, 0.40], 'gamma': [0.05, 0.10, 0.15, 0.20], 'score_pow': [1.0, 1.5, 2.0, 2.5, 3.0], 'composite_balance': [-0.5, -0.25, 0, 0.25, 0.5]}]
 
-target = torch.zeros(4)
+tensor = torch.zeros(3, 244, 244)
+tensor_np = tensor.numpy()
 
-ngarray = ng.p.Array(init=tensor.tolist()).set_bounds(-100, 100)
+print(tensor_np.shape)
 
-print(ngarray)
-print(type(ngarray))
+tensor_np = np.transpose(tensor_np)
 
-
-optimizer = ng.optimizers.NGOpt(parametrization=ngarray, budget=100)
-
-loss_func = torch.nn.MSELoss(reduction='mean')
-
-for i in range(optimizer.budget):
-    print(i)
-    candidate = optimizer.ask()
-    candidate_tensor = torch.tensor(candidate.value)
-    loss = loss_func(candidate_tensor, target).item()
-    optimizer.tell(candidate, loss)
-    print(optimizer.provide_recommendation().value)
+print(tensor_np.shape)

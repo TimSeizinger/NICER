@@ -10,6 +10,7 @@ from statistics import mean, stdev
 
 from PIL import Image
 from skimage.transform import resize
+from skimage.metrics import structural_similarity as ssim
 
 import config
 
@@ -195,7 +196,6 @@ def loss_with_l2_regularization(nima_result, filters, gamma=config.gamma, initia
 
     return distance_term + gamma * l2_term
 
-
 def loss_with_filter_regularization(rating, target, loss_func, filters, gamma=config.gamma, initial_filters=None):
     if initial_filters is not None:
         if len(filters) != len(initial_filters): error_callback('filter_length_l2loss')
@@ -212,8 +212,18 @@ def loss_with_filter_regularization(rating, target, loss_func, filters, gamma=co
         print_msg("L2 Term: {}".format(l2_term), 3)
     else:
         l2_term = sum([fil ** 2 for fil in filters])  # l2: sum the squares of all filters
+    print(l2_term)
 
     return distance_term + gamma * l2_term
+
+
+def loss_with_visual_regularization(rating, target, loss_func, img, enhanced_img, gamma=config.gamma):
+    distance_term = loss_func(rating, target)
+
+    vis_difference = ((1 - ssim(img, enhanced_img, multichannel=True)) * 5) ** 2
+    print(vis_difference)
+
+    return distance_term + gamma * vis_difference
 
 
 def weighted_mean(inputs: torch.Tensor, weights, length):
