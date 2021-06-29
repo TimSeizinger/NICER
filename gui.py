@@ -202,7 +202,7 @@ class NicerGui:
             self.epoch_label.place(x=40 + 0, y=button_y - 5)
             self.epochVar = IntVar()
             self.epochBox = tk.Entry(master, width=3)
-            self.epochBox.insert(-1, '50')
+            self.epochBox.insert(-1, str(config.epochs))
             self.epochBox.place(x=40 + 55, y=button_y - 5)
 
         # check if interactive sliders are on in Config
