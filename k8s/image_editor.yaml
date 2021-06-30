@@ -39,7 +39,7 @@ spec:
             - /dataset/abbey-glass-religion-architecture-106158.jpeg
             - --outfile
             - /out/test.jpeg
-            - -d=contrast,-1
+            - -d=contrast,-1,exposure,1,saturation,-1
       volumes:
         - name: dataset
           cephfs:
