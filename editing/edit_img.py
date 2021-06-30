@@ -11,7 +11,7 @@ parser.add_argument("--outfile", type=str, required=True)
 parser.add_argument("-d", "--distortion", action="append")
 args = parser.parse_args()
 
-print("possible image editing steps:", preprocess_images.mapping["all_changes"])
+#print("possible image editing steps:", preprocess_images.mapping["all_changes"])
 
 print(f"reading from\t{args.infile}")
 print(f"saving to\t{args.outfile}")

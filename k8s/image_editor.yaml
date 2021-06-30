@@ -24,8 +24,10 @@ spec:
           volumeMounts:
             - mountPath: /scratch
               name: scratch
-            - mountPath: /datasets
+            - mountPath: /dataset
               name: dataset
+            - mountPath: /out
+              name: out
             - mountPath: /dev/shm
               name: dshm
           command:
