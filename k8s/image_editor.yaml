@@ -34,12 +34,21 @@ spec:
             - python
             - edit_img.py
             - --infile
-            - /dataset/abacus-mathematics-addition-subtraction-1019470.jpeg
+            - /dataset/pexels-photo-1565772.jpeg
             - --outfile
             - /out/test.jpeg
-            - -d=brightness,-4
-            - -d=temperature,3
-            - -d=contrast,4
+            - -d=brightness,-3
+            - -d=brightness,3
+            - -d=contrast,-3
+            - -d=contrast,3
+            - -d=saturation,-3
+            - -d=saturation,3
+            - -d=exposure,-3
+            - -d=exposure,3
+            - -d=shadows,-3
+            - -d=shadows,3
+            - -d=highlights,-3
+            - -d=highlights,3
       volumes:
         - name: dataset
           cephfs:

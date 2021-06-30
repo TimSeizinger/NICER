@@ -33,9 +33,7 @@ spec:
             - /scratch/in.jpeg
             - --outfile
             - /scratch/out.jpeg
-            - -d=brightness,-4
-            - -d=temperature,3
-            - -d=contrast,4
+
       volumes:
         - name: scratch
           cephfs:
