@@ -2,7 +2,6 @@ import pandas
 
 from pathlib import Path
 from os import listdir
-from os.path import isfile, join
 
 photos = [str(f[:len(f)-4]) for f in listdir(str(Path.home()) + '\\Documents\\datasets\\images\\pexels\\images\\')
           #if isfile(join((str(Path.home()) + '\\Documents\\datasets\\images\\pexels\\images\\'), f)) and f.endswith('.jpeg')

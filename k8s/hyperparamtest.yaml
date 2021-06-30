@@ -8,43 +8,49 @@ spec:
       priorityClassName: research-med
       restartPolicy: "Never"
       containers:
-        - name: edit-img
-          image: ghcr.io/janpf/niaa/pytorch:latest
+        - name: hyperparam_test
+          image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.3
           imagePullPolicy: "Always"
           env:
             - name: HOME
               value: "/tmp"
           resources:
             limits:
-              cpu: "2"
-              memory: "2Gi"
+              nvidia.com/gpu: "1"
+              cpu: "48"
+              memory: "10Gi"
             requests:
-              cpu: ".1"
-              memory: "2Gi"
+              nvidia.com/gpu: "1"
+              cpu: "48"
+              memory: "10Gi"
           volumeMounts:
             - mountPath: /workspace
               name: workspace
-            - mountPath: /scratch
-              name: scratch
-            - mountPath: /dataset
-              name: dataset
+            - mountPath: /dataset_orig
+              name: dataset_orig
+            - mountPath: /dataset_dist
+              name: dataset_dist
             - mountPath: /out
               name: out
             - mountPath: /dev/shm
               name: dshm
           command:
             - python
-            - edit_img.py
-            - --infile
-            - /dataset/abbey-glass-religion-architecture-106158.jpeg
-            - --outfile
-            - /out/test.jpeg
-            - -d=highlights,-5
-            - -d=highlights,5
-            - -d=shadows,-5
-            - -d=shadows,5
+            - hyperparamtest.py
+            - --sample_size
+            - 100
+            - --optim_lr
+            - 0.025
+            - --gamma
+            - 0.1
+            - --score_pow
+            - 1.5
+            - --composite_balance
+            - 0
+            - --adaptive_score_offset
+            - 0.3
       volumes:
-        - name: dataset
+        - name: dataset_orig
           cephfs:
             monitors:
               - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
@@ -52,7 +58,7 @@ spec:
             path: "/home/stud/seizinger/git/NICER/datasets/pexels/images"
             secretRef:
               name: ceph-secret
-        - name: out
+        - name: dataset_dist
           cephfs:
             monitors:
               - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
@@ -60,20 +66,20 @@ spec:
             path: "/home/stud/seizinger/git/NICER/datasets/pexels_dist/images"
             secretRef:
               name: ceph-secret
+        - name: out
+          cephfs:
+            monitors:
+              - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
+            user: studseizinger
+            path: "/home/stud/seizinger/git/NICER/out"
+            secretRef:
+              name: ceph-secret
         - name: workspace
           cephfs:
             monitors:
               - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
             user: studseizinger
-            path: "/home/stud/seizinger/git/NICER/editing"
-            secretRef:
-              name: ceph-secret
-        - name: scratch
-          cephfs:
-            monitors:
-              - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
-            user: studseizinger
-            path: "/home/stud/seizinger/git/NICER/editing"
+            path: "/home/stud/seizinger/git/NICER/"
             secretRef:
               name: ceph-secret
         - name: dshm

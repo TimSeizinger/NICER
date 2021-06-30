@@ -1,14 +1,8 @@
 import logging
 import random
-from pathlib import Path
-from typing import List
+import os
 
-import numpy as np
 import pandas as pd
-import torch
-import torch.utils
-import torch.utils.data
-import torchvision.transforms as transforms
 from PIL import Image
 from pathlib import Path
 
@@ -167,3 +161,42 @@ class LandscapesTop:
             "orig_ia_pre_styles_change": self.files.iloc[idx][2],
             "img": pil_img
                 }
+
+class Pexels_hyperparamsearch:
+    def __init__(
+        self,
+        image_orig_dir: Path = Path('dataset_orig/'),
+        image_dist_dir: Path = Path('dataset_dist/'),
+        sample_size: int = 5000,
+        horizontal_flip: bool = False,
+        normalize: bool = False,
+    ):
+        self.image_orig_dir = image_orig_dir
+        self.image_dist_dit = image_dist_dir
+        self.normalize = normalize
+        self.horizontal_flip = horizontal_flip
+        photos = os.listdir(image_dist_dir)
+        df = pd.DataFrame(data={'images': photos})
+        self.files = df.sample(n=sample_size)
+
+    def __len__(self) -> int:
+        return len(self.files)
+
+    def __getitem__(self, idx):
+        '''
+        try:
+            return self._actualgetitem(idx)
+        except:
+            print("except" + str(idx))
+            return self[random.randint(0, len(self))]
+        '''
+        return self._actualgetitem(idx)
+
+    def _actualgetitem(self, idx: int):
+        photo = str(self.files.iloc[idx][0])
+        path_dist = self.image_dist_dit / photo
+        path_orig = self.image_orig_dir / (photo.split('_')[0] + photo.split('_')[-1])
+        img_orig: Image = Image.open(path_orig).convert("RGB")
+        img_dist: Image = Image.open(path_dist).convert("RGB")
+
+        return {"image_id": self.files.iloc[idx][0], "img_orig": img_orig, "img_dist": img_dist}

@@ -574,7 +574,7 @@ class NICER(nn.Module):
                                                             ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
                 if ssmtpiaa:
                     if score_target is None:
-                        score_target = min(ia_pre_ratings['score'].item() + 0.3, 1.0)
+                        score_target = min(ia_pre_ratings['score'].item() + config.adaptive_score_offset, 1.0)
                         print('score_target is: ' + str(score_target))
                     if config.SSMTPIAA_loss == 'MSE_SCORE_VISUAL_REG':
                         img_enhanced = np.transpose(img_as_float(enhanced_img.cpu().detach().squeeze().numpy()))
@@ -627,7 +627,7 @@ class NICER(nn.Module):
                                                                   fixFilters, initial_filter_values, headless_mode=True,
                                                                   nima_vgg16=False, nima_mobilenetv2=False,
                                                                   ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=False)
-                    score_target = min(ia_pre_ratings['score'].item() + 0.3, 1.0)
+                    score_target = min(ia_pre_ratings['score'].item() + config.adaptive_score_offset, 1.0)
                     print('score_target is: ' + str(score_target))
 
                 for i in range(epochs):
@@ -724,7 +724,7 @@ class NICER(nn.Module):
                                                                   fixFilters, initial_filter_values, headless_mode=True,
                                                                   nima_vgg16=False, nima_mobilenetv2=False,
                                                                   ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=False)
-                    score_target = min(ia_pre_ratings['score'].item() + 0.3, 1.0)
+                    score_target = min(ia_pre_ratings['score'].item() + config.adaptive_score_offset, 1.0)
                     print('score_target is: ' + str(score_target))
 
                 new_epoch = epochs*config.cma_population

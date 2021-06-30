@@ -5,7 +5,7 @@ metadata:
 spec:
   template:
     spec:
-      priorityClassName: research-med
+      priorityClassName: research-low
       restartPolicy: "Never"
       containers:
         - name: edit-img

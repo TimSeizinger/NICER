@@ -7,11 +7,12 @@ import numpy as np
 from skimage.metrics import structural_similarity as ssim
 from skimage import img_as_float
 
-from dataset import Pexels
+from dataset import Pexels, Pexels_hyperparamsearch
 from utils import nima_transform, jans_transform, weighted_mean
 from statistics import mean
 from autobright import normalize_brightness
 from PIL import Image
+from pathlib import Path
 
 
 
@@ -54,7 +55,7 @@ def add_to_dict(dict: dict, prefixes: list, postfix: str):
         dict[f'{prefix}{postfix}'] = []
 
 
-def get_results_dict(prefixes, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine):
+def get_results_dict(prefixes: list, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine):
     results = {'image_id': []}
 
     if nima_vgg16:
@@ -213,13 +214,15 @@ def evaluate_editing_losses_pexels(nicer, output_file, mode, losses: list, limit
         write_dict_to_file(results, output_file + str(limit),
                            path="./analysis/results/" + output_file + '_graph_data' + "/")
 
-def evaluate_editing_recovery_pexels(nicer, output_file, mode, losses: list, limit=None,
+
+def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_data_path: Path, filename, loss: str, limit=None,
                             nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True):
-    results = get_results_dict(['orig'] + losses, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine)
+
+    results = get_results_dict(['orig', 'dist', 'rest'], nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine)
     results['dist_filters'] = []
     results['distance_to_orig'] = []
 
-    pexels = Pexels(mode=mode)
+    pexels = Pexels_hyperparamsearch(sample_size=sample_size)
 
     if limit is None:
         limit = len(pexels)
@@ -229,62 +232,55 @@ def evaluate_editing_recovery_pexels(nicer, output_file, mode, losses: list, lim
         print('processing ' + str(item['image_id']) + ' in iteration ' + str(i))
         results['image_id'].append(item['image_id'])
 
-        # Evaluate unedited image and save scores to dictionary and a copy of the image to disk
-        nicer.config.SSMTPIAA_loss = 'MSE_SCORE_REG'
-        evaluate_image(item['img'], nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='orig')
-        item['img'].save('./analysis/results/' + output_file + '/' + item['image_id'])
+        # Set loss
+        nicer.config.SSMTPIAA_loss = loss
 
-        img_original = img_as_float(np.array(item['img']))
-        print(img_original.shape)
+        # Evaluate unedited image and save scores to dictionary
+        evaluate_image(item['img_orig'], nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='orig')
 
+        img_orig = img_as_float(np.array(item['img_orig']))
 
-        # Create distorted version
-        min, max = -0.3, 0.3
-        filters = [random.uniform(min, max), random.uniform(min, max), random.uniform(min, max),
-                   random.uniform(min, max),
-                   random.uniform(min, max), random.uniform(min, max), random.uniform(min, max),
-                   random.uniform(min, max)]
-        results['dist_filters'].append(filters)
-        distorted_image = Image.fromarray(nicer.single_image_pass_can(item['img'], abn=False, filterList=filters))
+        # Evaluate distorted image and save scores to dictionary
+        evaluate_image(item['img_dist'], nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='dist')
 
-        distorted_image.save('./analysis/results/' + output_file + '/' + item['image_id'].split('.')[0] + 'distorted' +
-                             '.' + item['image_id'].split('.')[1])
+        img_dist = img_as_float(np.array(item['img_dist']))
 
+        print(f"editing {item['image_id']} using {loss} in iteration {i}")
 
+        # Edit image
+        restored_image, graph_data = nicer.enhance_image(item['img_dist'], re_init=True, headless_mode=True,
+                                                         nima_vgg16=nima_vgg16, nima_mobilenetv2=nima_mobilenetv2,
+                                                         ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
+        img_rest = img_as_float(np.array(restored_image))
+        restored_image = Image.fromarray(restored_image)
 
-        for loss in losses:
-            print(f"editing {item['image_id']} using {loss} in iteration {i}")
+        # Evaluate edited image and save scores
+        evaluate_image(restored_image, nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='rest')
 
-            # Set loss
-            nicer.config.SSMTPIAA_loss = loss
+        similarity = 1 - ssim(img_orig, img_rest, multichannel=True)
+        print(similarity)
+        results['distance_to_orig'].append(similarity)
 
-            # Edit image
-            edited_image, graph_data = nicer.enhance_image(distorted_image, re_init=True, headless_mode=True,
-                                                           nima_vgg16=nima_vgg16, nima_mobilenetv2=nima_mobilenetv2,
-                                                           ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
-            img_enhanced = img_as_float(np.array(edited_image))
-            print(img_enhanced.shape)
-            edited_image = Image.fromarray(edited_image)
+        # Export image with rating history
+        restored_image.save(img_path/f"{item['image_id'].split('.')[0]}_rest.{item['image_id'].split('.')[1]}")
 
-            # Evaluate edited image and save scores
-            evaluate_image(edited_image, nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix=loss)
+        with open(img_path/f"{item['image_id'].split('.')[0]}_rest.json", "w") as outfile:
+            json.dump(graph_data, outfile)
 
-            similarity = 1 - ssim(img_original, img_enhanced, multichannel=True)
-            print(similarity)
-            results['distance_to_orig'].append(similarity)
-
-            # Export image with rating history
-            edited_image.save('./analysis/results/' + output_file + '/' + item['image_id'].split('.')[0] + loss + '.' + item['image_id'].split('.')[1])
-
-            with open("./analysis/results/" + output_file + '/' + item['image_id'].split('.')[0] + loss + ".json", "w") as outfile:
-                json.dump(graph_data, outfile)
-
-        if i % 50 == 0:
-            write_dict_to_file(results, output_file + str(i),
-                               path="./analysis/results/" + output_file + '_graph_data' + "/")
+        if i+1 % 50 == 0:
+            df = pd.DataFrame.from_dict(results)
+            df.to_csv(graph_data_path/filename/f"_{i}.csv", sep=',', index=True)
+            html = df.to_html()
+            with open(graph_data_path/filename/f"_{i}.html", 'w') as file:
+                file.write(html)
             for key in results:
                 results[key] = []
 
     if results['image_id']:
-        write_dict_to_file(results, output_file + str(limit),
-                           path="./analysis/results/" + output_file + '_graph_data' + "/")
+        df = pd.DataFrame.from_dict(results)
+        df.to_csv(graph_data_path / filename / f"_{limit}.csv", sep=',', index=True)
+        html = df.to_html()
+        with open(graph_data_path / filename / f"_{limit}.html", 'w') as file:
+            file.write(html)
+        for key in results:
+            results[key] = []

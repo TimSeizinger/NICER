@@ -43,6 +43,8 @@ hinge_val = 0.15                                    # value for hinge loss
 composite_pow = 1.75                 # Score influence on balance between MSE_SCORE_REG and MSE_STYLE_CHANGES_HINGE_REG
 composite_balance = 0             # Balance between MSE_SCORE_REG COMPOSITE and MSE_STYLE_CHANGES_HINGE_REG [-1,0, 1.0]
 
+adaptive_score_offset = 0.3
+
 # ----- image parameters:
 
 rescale = True
