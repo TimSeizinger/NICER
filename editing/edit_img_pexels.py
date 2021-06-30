@@ -53,12 +53,22 @@ for i in range(10):  # len(pexels)
     print("editing: " + pexels.__getitem__(i) + 'with')
     distortions = [('saturation', randrange(-1, 1)), ('contrast', randrange(-1, 1)),
                    ('shadows', randrange(-1, 3)), ('highlights', randrange(-3, 1)), ('exposure', randrange(-1, 1))]
+    while distortions[0][1] == distortions[1][1] == distortions[2][1] == distortions[3][1] == distortions[4][1] == 0:
+        distortions = [('saturation', randrange(-1, 1)), ('contrast', randrange(-1, 1)),
+                       ('shadows', randrange(-1, 3)), ('highlights', randrange(-3, 1)), ('exposure', randrange(-1, 1))]
+
     print(distortions)
 
     image = Image.open('/' + pexels.__getitem__(i)).convert("RGB")
 
     for distortion in distortions:
         image = ed.distort_image(distortion[0], distortion[1], img=image)
+        save_path = Path('/out/') / \
+                    f"{pexels.__getitem__(i).split('/')[1].split('.')[0]}_{distortion[0]}_{distortion[1]}_" \
+                    f"." \
+                    f"{pexels.__getitem__(i).split('/')[1].split('.')[1]}"
+        print(f"saving to\t{save_path}")
+        image.save(save_path)
 
     save_path = Path('/out/') / \
                     f"{pexels.__getitem__(i).split('/')[1].split('.')[0]}_{distortions[0][1]}_{distortions[1][1]}_" \
