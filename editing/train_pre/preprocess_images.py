@@ -206,6 +206,8 @@ class ImageEditor:
 
         return_dict: Dict[str, Image.Image] = dict()
 
+        print(path)
+
         ptn = Gegl.Node()
         ptn.set_property("cache-policy", Gegl.CachePolicy.NEVER)
         img: Image.Image = Image.open(path).convert("RGB")
