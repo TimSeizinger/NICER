@@ -37,14 +37,7 @@ spec:
             - /dataset/pexels-photo-1565772.jpeg
             - --outfile
             - /out/test.jpeg
-            - -d=brightness,-1
-            - -d=brightness,1
-            - -d=contrast,-1
-            - -d=contrast,1
-            - -d=saturation,-1
-            - -d=saturation,1
-            - -d=exposure,-1
-            - -d=exposure,1
+            - -d=contrast,-1, saturation,-1, exposure,1
       volumes:
         - name: dataset
           cephfs:
