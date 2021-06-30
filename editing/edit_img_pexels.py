@@ -1,16 +1,12 @@
 import logging
-import random
-from pathlib import Path
-from typing import List
-
-import numpy as np
 import pandas as pd
-import torch
-import torch.utils
-import torch.utils.data
-import torchvision.transforms as transforms
 from PIL import Image
 from pathlib import Path
+from random import randrange
+import sys
+sys.path[0] = "."
+from train_pre import preprocess_images
+
 
 class Pexels:
     def __init__(
@@ -46,5 +42,19 @@ class Pexels:
 
     def _actualgetitem(self, idx: int):
         path = self.image_dir / str(self.files.iloc[idx][0])
-        pil_img: Image = Image.open(path).convert("RGB")
-        return {"image_id": self.files.iloc[idx][0], "img": pil_img}
+        return str(path)
+
+
+pexels = Pexels()
+ed = preprocess_images.ImageEditor()
+
+for i in range(10):  # len(pexels)
+    distortions = [('contrast', randrange(-1, 1)), ('saturation', randrange(-1, 1)), ('exposure', randrange(-1, 1)),
+                   ('shadows', randrange(-1, 3)), ('highlights', randrange(-3, 1))]
+
+    result = ed.distort_list_image(distortions, pexels.__getitem__(i))
+
+    for k, v in result.items():
+        save_path = Path('out/') / f"{Path(pexels.__getitem__(i)).prefix}_edited_{Path(pexels.__getitem__(i)).suffix}"
+        print(f"saving to\t{save_path}")
+        v.save(save_path)
