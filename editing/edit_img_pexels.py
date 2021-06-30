@@ -52,7 +52,7 @@ ed = preprocess_images.ImageEditor()
 for i in range(100):  # len(pexels)
     print("editing: " + pexels.__getitem__(i) + 'with')
     distortions = [('saturation', randrange(-1, 1)), ('contrast', randrange(-1, 1)),
-                   ('shadows', randrange(-1, 3)), ('highlights', randrange(-3, 1)), ('exposure', randrange(-2, 1))]
+                   ('shadows', randrange(-1, 4)), ('highlights', randrange(-4, 1)), ('exposure', randrange(-2, 1))]
     while distortions[0][1] == distortions[1][1] == distortions[2][1] == distortions[3][1] == distortions[4][1] == 0:
         distortions = [('saturation', randrange(-1, 1)), ('contrast', randrange(-1, 1)),
                        ('shadows', randrange(-1, 3)), ('highlights', randrange(-3, 1)), ('exposure', randrange(-1, 1))]

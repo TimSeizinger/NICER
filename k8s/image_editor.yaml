@@ -36,7 +36,7 @@ spec:
             - python
             - edit_img.py
             - --infile
-            - /dataset/abbey-glass-religion-architecture-106158.jpeg
+            - /dataset/abbaye-de-senanque-monastery-abbey-notre-dame-de-senanque-161124.jpeg
             - --outfile
             - /out/test.jpeg
             - -d=highlights,-5
