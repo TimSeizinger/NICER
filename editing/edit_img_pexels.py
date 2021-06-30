@@ -49,7 +49,7 @@ pexels = Pexels()
 print("Loaded Pexels dataset")
 ed = preprocess_images.ImageEditor()
 
-for i in range(10):  # len(pexels)
+for i in range(len(pexels)):  # len(pexels)
     print("editing: " + pexels.__getitem__(i) + 'with')
     distortions1 = [('saturation', randrange(-1, 1)), ('contrast', randrange(-1, 1)),
                     ('shadows', randrange(-1, 4)), ('highlights', randrange(-4, 1)), ('exposure', randrange(-2, 1))]
