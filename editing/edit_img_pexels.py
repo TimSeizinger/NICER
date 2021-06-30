@@ -58,6 +58,6 @@ for i in range(10):  # len(pexels)
     result = ed.distort_list_image(distortions, '/' + pexels.__getitem__(i))
 
     for k, v in result.items():
-        save_path = Path('out/') / f"{Path(pexels.__getitem__(i)).prefix}_edited_{Path(pexels.__getitem__(i)).suffix}"
+        save_path = Path('/out/') / f"{pexels.__getitem__(i).split('/')[1].split('.')[0]}_edited{pexels.__getitem__(i).split('/')[1].split('.')[1]}"
         print(f"saving to\t{save_path}")
         v.save(save_path)
