@@ -22,6 +22,8 @@ spec:
               cpu: ".1"
               memory: "2Gi"
           volumeMounts:
+            - mountPath: /workspace
+              name: workspace
             - mountPath: /scratch
               name: scratch
             - mountPath: /dataset
@@ -51,6 +53,14 @@ spec:
             secretRef:
               name: ceph-secret
         - name: scratch
+          cephfs:
+            monitors:
+              - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
+            user: studseizinger
+            path: "/home/stud/seizinger/git/NICER/editing"
+            secretRef:
+              name: ceph-secret
+        - name: workspace
           cephfs:
             monitors:
               - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
