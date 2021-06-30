@@ -188,13 +188,13 @@ class ImageEditor:
     def _crop_rightcorners(self, img: Image.Image, intensity: int) -> Image.Image:
         return self._crop(img, intensity_h=abs(intensity), intensity_v=intensity)
 
-    def distort_image(self, distortion: str, intensity: int, path: str = None):
+    def distort_image(self, distortion: str, intensity: int, path: str = None, img: Image.Image = None):
         return list(
-            self.distort_list_image(path=path, distortion_intens_tuple_list=[(distortion, intensity)]).values()
+            self.distort_list_image(path=path, img=img, distortion_intens_tuple_list=[(distortion, intensity)]).values()
         )[0]
 
     def distort_list_image(
-        self, distortion_intens_tuple_list: List[Tuple[str, int]], path: str = None
+        self, distortion_intens_tuple_list: List[Tuple[str, int]], path: str = None, img: Image.Image = None
     ) -> Dict[str, Image.Image]:
         import gi
 
@@ -212,7 +212,8 @@ class ImageEditor:
 
         ptn = Gegl.Node()
         ptn.set_property("cache-policy", Gegl.CachePolicy.NEVER)
-        img: Image.Image = Image.open(path).convert("RGB")
+        if img is None:
+            img: Image.Image = Image.open(path).convert("RGB")
 
         with NamedTemporaryFile(suffix=".jpg") as src_file:
             img.save(src_file.name)
