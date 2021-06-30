@@ -43,6 +43,16 @@ spec:
             - -d=highlights,5
             - -d=shadows,-5
             - -d=shadows,5
+            - -d=contrast,1
+            - -d=contrast,2
+            - -d=contrast,3
+            - -d=contrast,4
+            - -d=contrast,5
+            - -d=contrast,-1
+            - -d=contrast,-2
+            - -d=contrast,-3
+            - -d=contrast,-4
+            - -d=contrast,-5
       volumes:
         - name: dataset
           cephfs:
