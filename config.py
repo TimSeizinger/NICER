@@ -45,7 +45,7 @@ composite_balance = 0             # Balance between MSE_SCORE_REG COMPOSITE and 
 
 # ----- image parameters:
 
-rescale = False
+rescale = True
 final_size = 1920                                   # final size when saving. Attention: bigger imgs require more memory
 supported_extensions = ['jpg', 'jpeg', 'png']
 supported_extensions_raw = ['dng']                  # legacy, deprecated

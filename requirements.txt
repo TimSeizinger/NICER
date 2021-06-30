@@ -24,4 +24,3 @@ cma
 nevergrad
 scikit-learn
 scikit-image
-cudatoolkit~=11.1

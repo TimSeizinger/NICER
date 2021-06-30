@@ -1,6 +1,10 @@
-from random import randrange
+from PIL import Image
+import numpy as np
+from skimage import img_as_float
+from skimage.metrics import structural_similarity as ssim
 
-distortions = [('saturation', randrange(-1, 1)), ('contrast', randrange(-1, 1)),
-                   ('shadows', randrange(-1, 3)), ('highlights', randrange(-3, 1)), ('exposure', randrange(-1, 1))]
-
-print(f"{distortions[0][1]}_{distortions[1][1]}_{distortions[2][1]}_{distortions[3][1]}_{distortions[4][1]}")
+original = img_as_float(np.array(Image.open('out/xperiment/original.jpeg')))
+print(original.shape)
+distorted = img_as_float(np.array(Image.open('out/xperiment/distorted.jpeg')))
+print(f"Similarity between original and distorted is {1-ssim(original, distorted, multichannel=True)}")
+nima = distorted = img_as_float(np.array(Image.open('out/xperiment/n')))
