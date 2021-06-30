@@ -1,0 +1,24 @@
+captum
+debugpy
+imagenet-c
+jupyterlab
+notebook
+numpy
+opencv-python-headless
+pandas
+Pillow
+pycairo
+pytorch-lightning
+redis
+scikit-image
+seaborn
+tensorboard
+torch
+torchvision
+
+# temporary:
+#imageai
+#tensorflow<2
+#keras<2.4.0
+#opencv-python
+#requests

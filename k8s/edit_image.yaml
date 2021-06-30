@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: edit-img
+spec:
+  template:
+    spec:
+      priorityClassName: research-low
+      restartPolicy: "Never"
+      containers:
+        - name: edit-img
+          image: ghcr.io/janpf/niaa/pytorch:latest
+          imagePullPolicy: "Always"
+          env:
+            - name: HOME
+              value: "/tmp"
+          resources:
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+            requests:
+              cpu: ".1"
+              memory: "2Gi"
+          volumeMounts:
+            - mountPath: /scratch
+              name: scratch
+            - mountPath: /dev/shm
+              name: dshm
+          command:
+            - python
+            - edit_img.py
+            - --infile
+            - /scratch/in.jpeg
+            - --outfile
+            - /scratch/out.jpeg
+            - -d=brightness,-4
+            - -d=temperature,3
+            - -d=contrast,4
+      volumes:
+        - name: scratch
+          cephfs:
+            monitors:
+              - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
+            user: pfister
+            path: "/scratch/stud/pfister/NIAA"
+            secretRef:
+              name: ceph-secret
+        - name: dshm
+          emptyDir:
+            medium: Memory
