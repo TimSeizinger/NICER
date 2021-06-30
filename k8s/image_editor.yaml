@@ -36,7 +36,7 @@ spec:
             - python
             - edit_img.py
             - --infile
-            - /dataset/pexels-photo-1565772.jpeg
+            - /dataset/abbey-glass-religion-architecture-106158.jpeg
             - --outfile
             - /out/test.jpeg
             - -d=contrast,-1

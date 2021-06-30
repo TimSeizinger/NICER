@@ -200,13 +200,15 @@ class ImageEditor:
 
         gi.require_version("Gegl", "0.4")
         from gi.repository import Gegl
-
+        
+        print("input path:")
+        print(path)
         Gegl.init()
         Gegl.config().props.application_license = "GPL3"  #  this is essential
 
         return_dict: Dict[str, Image.Image] = dict()
 
-        print(path)
+
 
         ptn = Gegl.Node()
         ptn.set_property("cache-policy", Gegl.CachePolicy.NEVER)
