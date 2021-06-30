@@ -97,7 +97,7 @@ for i in range(10):  # len(pexels)
     distortions3 = [('saturation', randrange(-1, 1)), ('contrast', randrange(-1, 1)),
                     ('shadows', randrange(-1, 4)), ('highlights', randrange(-4, 1)), ('exposure', randrange(-2, 1))]
     while distortions3[0][1] == distortions3[1][1] == distortions3[2][1] == distortions3[3][1] == distortions3[4][
-        1] == 0 or distortions1 == distortions3 or distortions2==distortions3:
+        1] == 0 or distortions1 == distortions3 or distortions2 == distortions3:
         distortions3 = [('saturation', randrange(-1, 1)), ('contrast', randrange(-1, 1)),
                         ('shadows', randrange(-1, 3)), ('highlights', randrange(-3, 1)), ('exposure', randrange(-1, 1))]
 
@@ -111,6 +111,28 @@ for i in range(10):  # len(pexels)
     save_path = Path('/out/') / \
                 f"{pexels.__getitem__(i).split('/')[1].split('.')[0]}_{distortions3[0][1]}_{distortions3[1][1]}_" \
                 f"{distortions3[2][1]}_{distortions3[3][1]}_{distortions3[4][1]}." \
+                f"{pexels.__getitem__(i).split('/')[1].split('.')[1]}"
+    print(f"saving to\t{save_path}")
+    image.save(save_path)
+
+    print("editing: " + pexels.__getitem__(i) + 'with')
+    distortions4 = [('saturation', randrange(-1, 1)), ('contrast', randrange(-1, 1)),
+                    ('shadows', randrange(-1, 4)), ('highlights', randrange(-4, 1)), ('exposure', randrange(-2, 1))]
+    while distortions4[0][1] == distortions4[1][1] == distortions4[2][1] == distortions4[3][1] == distortions4[4][
+        1] == 0 or distortions1 == distortions4 or distortions2 == distortions4 or distortions3 == distortions4:
+        distortions4 = [('saturation', randrange(-1, 1)), ('contrast', randrange(-1, 1)),
+                        ('shadows', randrange(-1, 3)), ('highlights', randrange(-3, 1)), ('exposure', randrange(-1, 1))]
+
+    print(distortions4)
+
+    image = Image.open('/' + pexels.__getitem__(i)).convert("RGB")
+
+    for distortion in distortions4:
+        image = ed.distort_image(distortion[0], distortion[1], img=image)
+
+    save_path = Path('/out/') / \
+                f"{pexels.__getitem__(i).split('/')[1].split('.')[0]}_{distortions4[0][1]}_{distortions4[1][1]}_" \
+                f"{distortions4[2][1]}_{distortions4[3][1]}_{distortions4[4][1]}." \
                 f"{pexels.__getitem__(i).split('/')[1].split('.')[1]}"
     print(f"saving to\t{save_path}")
     image.save(save_path)
