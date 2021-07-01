@@ -60,7 +60,7 @@ def jans_transform(image):
 
 
 # pads a tensor to a square, ensure that all image dimensions are dividable by 2!!!
-def jans_padding(image: torch.Tensor):
+def jans_padding(image: torch.Tensor) -> torch.Tensor:
     if image.shape[2] == image.shape[3]:
         return image
     elif image.shape[2] < image.shape[3]:

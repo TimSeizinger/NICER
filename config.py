@@ -33,8 +33,8 @@ padding = True
 
 
 gamma = 0.1
-epochs = 5
-optim = 'sgd'                                      # also supports adam, cma and nevergrad(meta)
+epochs = 50
+optim = 'sgd'                                      # also supports sgd, adam, cma and nevergrad(meta)
 optim_lr = 0.025
 optim_momentum = 0.9
 cma_sigma = 5

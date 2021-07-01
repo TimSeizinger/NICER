@@ -497,6 +497,13 @@ class NICER(nn.Module):
 
             Returns a re-sized 8bit image as np.array
         """
+
+        print(config.optim_lr)
+        print(config.gamma)
+        print(config.composite_pow)
+        print(config.composite_balance)
+        print(config.adaptive_score_offset)
+
         if headless_mode:
             self.queue = None
             self.in_queue = None
@@ -659,13 +666,12 @@ class NICER(nn.Module):
                                                                     nima_vgg16=nima_vgg16,
                                                                     nima_mobilenetv2=nima_mobilenetv2,
                                                                     ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
-
+                        img_enhanced = None
                         nima_vgg16_loss, nima_mobilenetv2_loss, ia_pre_loss, ia_fine_loss = self.calculate_losses(
                             nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings,
                             score_target,
-                            ia_fine_distr_of_ratings, user_preset_filters, re_init, nima_vgg16, nima_mobilenetv2,
-                            ssmtpiaa,
-                            ssmtpiaa_fine
+                            ia_fine_distr_of_ratings, img, img_enhanced, user_preset_filters, re_init,
+                            nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine
                         )
 
                         loss = self.select_loss(nima_vgg16_loss, nima_mobilenetv2_loss, ia_pre_loss, ia_pre_ratings,
@@ -688,9 +694,10 @@ class NICER(nn.Module):
                                                                 ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
 
                     nima_vgg16_loss, nima_mobilenetv2_loss, ia_pre_loss, ia_fine_loss = self.calculate_losses(
-                        nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, score_target,
-                        ia_fine_distr_of_ratings, user_preset_filters, re_init, nima_vgg16, nima_mobilenetv2, ssmtpiaa,
-                        ssmtpiaa_fine
+                        nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings,
+                        score_target,
+                        ia_fine_distr_of_ratings, img, img_enhanced, user_preset_filters, re_init,
+                        nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine
                     )
 
                     loss = self.select_loss(nima_vgg16_loss, nima_mobilenetv2_loss, ia_pre_loss, ia_pre_ratings,
