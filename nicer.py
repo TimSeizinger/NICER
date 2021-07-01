@@ -530,7 +530,7 @@ class NICER(nn.Module):
             bright_normalized_img = normalize_brightness(pil_image, input_is_PIL=True)
             pil_image = Image.fromarray(bright_normalized_img)
 
-        if img_orig:
+        if img_orig is not None:
             bright_normalized_img_orig = normalize_brightness(img_orig, input_is_PIL=True)
             img_orig = Image.fromarray(bright_normalized_img_orig)
             img_orig = nima_transform(img_orig)
@@ -590,10 +590,10 @@ class NICER(nn.Module):
                     if config.SSMTPIAA_loss == 'MSE_SCORE_VISUAL_REG':
                         img_enhanced = np.transpose(img_as_float(enhanced_img.cpu().detach().squeeze().numpy()))
 
-                if not img_enhanced and img_orig:
+                if not img_enhanced and img_orig is not None:
                     img_enhanced = np.transpose(img_as_float(enhanced_img.cpu().detach().squeeze().numpy()))
 
-                if img_orig:
+                if img_orig is not None:
                     distances_to_orig.append(ssim(img_orig, img_enhanced, multichannel=True))
 
                 nima_vgg16_loss, nima_mobilenetv2_loss, ia_pre_loss, ia_fine_loss = self.calculate_losses(
