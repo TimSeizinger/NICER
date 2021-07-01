@@ -1,28 +1,8 @@
-import random
-import os
-from pathlib import Path
 
-out = Path("k8s/hyperparametersearch")
-if not os.path.isdir(out):
-    os.mkdir(out)
-
-for i in range(1, 5):
-    folder = f"batch_{5}"
-    if not os.path.isdir(out / folder):
-        os.mkdir(out / folder)
-
-    for j in range(5):
-        optim_lr: float = random.uniform(0.01, 0.7)
-        gamma: float = random.uniform(0.0, 0.3)
-        score_pow: float = random.uniform(-0.5, 3)
-        composite_balance: float = random.uniform(-1, 1)
-        adaptive_score_offset: float = random.uniform(0.1, 1)
-
-        yaml = f'''
         apiVersion: batch/v1
         kind: Job
         metadata:
-          name: hypersearch-{i}-{j}
+          name: hypersearch-3-4
         spec:
           template:
             spec:
@@ -60,15 +40,15 @@ for i in range(1, 5):
                     - python
                     - hyperparamtest.py
                     - --optim_lr
-                    - '{optim_lr}'
+                    - '0.25573713208164717'
                     - --gamma
-                    - '{gamma}'
+                    - '0.11172466642630455'
                     - --score_pow
-                    - '{score_pow}'
+                    - '2.1140126911898176'
                     - --composite_balance
-                    - '{composite_balance}'
+                    - '-0.1981895147674131'
                     - --adaptive_score_offset
-                    - '{adaptive_score_offset}'
+                    - '0.42323518535481774'
               imagePullSecrets:
                 - name: lsx-registry
               volumes:
@@ -108,7 +88,4 @@ for i in range(1, 5):
                   emptyDir:
                     medium: Memory
         
-        '''
-
-        with open(out/folder/f"hypersearch-{i}-{j}.yaml", "w") as yamlfile:
-            yamlfile.write(yaml)
+        
