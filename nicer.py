@@ -583,7 +583,7 @@ class NICER(nn.Module):
                                                             ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
 
                 print(type(enhanced_img))
-                
+
                 img_enhanced = None
                 if ssmtpiaa:
                     if score_target is None:

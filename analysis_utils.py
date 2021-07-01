@@ -250,7 +250,6 @@ def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_d
 
         # Edit image
         restored_image, graph_data = nicer.enhance_image(item['img_dist'], re_init=True, headless_mode=True,
-                                                         img_orig=item['img_orig'],
                                                          nima_vgg16=nima_vgg16, nima_mobilenetv2=nima_mobilenetv2,
                                                          ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
         img_rest = img_as_float(np.array(restored_image))
