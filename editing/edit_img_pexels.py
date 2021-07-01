@@ -13,7 +13,7 @@ class Pexels:
         image_dir: Path = Path('dataset/'),
     ):
         self.image_dir = image_dir
-        path = Path('dataset_processing/pexels_test_set_2039.csv')
+        path = Path('dataset_processing/pexels_test_set.csv')
         df = pd.read_csv(path)
         self.files = df.sample(n=5000)
 
