@@ -233,9 +233,13 @@ def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_d
     print(processed)
     if processed:
         processed = [item.split('.')[0] for item in processed]
+        print(processed)
         processed = [item.split('_')[-1] for item in processed]
+        print(processed)
         processed = [int(item) for item in processed]
+        print(processed)
         processed_fallback = max(processed)
+        print(processed_fallback)
 
     for i in range(processed_fallback, limit):
         item = pexels.__getitem__(i)
