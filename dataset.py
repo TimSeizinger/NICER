@@ -167,7 +167,6 @@ class Pexels_hyperparamsearch:
         self,
         image_orig_dir: Path = Path('datasets/pexels/images'),
         image_dist_dir: Path = Path('datasets/pexels_dist/images'),
-        sample_size: int = 5000,
         horizontal_flip: bool = False,
         normalize: bool = False,
     ):
@@ -176,8 +175,7 @@ class Pexels_hyperparamsearch:
         self.normalize = normalize
         self.horizontal_flip = horizontal_flip
         photos = os.listdir(image_dist_dir)
-        df = pd.DataFrame(data={'images': photos})
-        self.files = df.sample(n=sample_size)
+        self.files = pd.DataFrame(data={'images': photos})
 
     def __len__(self) -> int:
         return len(self.files)

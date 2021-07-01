@@ -216,30 +216,25 @@ def evaluate_editing_losses_pexels(nicer, output_file, mode, losses: list, limit
                            path="./analysis/results/" + output_file + '_graph_data' + "/")
 
 
-def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_data_path: Path, filename, loss: str, limit=None,
+def evaluate_editing_recovery_pexels(nicer, img_path: Path, graph_data_path: Path, filename, loss: str, limit=None,
                             nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True):
 
     results = get_results_dict(['orig', 'dist', 'rest'], nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine)
     #results['dist_filters'] = []
     results['distance_to_orig'] = []
 
-    pexels = Pexels_hyperparamsearch(sample_size=sample_size)
+    pexels = Pexels_hyperparamsearch()
 
     if limit is None:
         limit = len(pexels)
 
     processed_fallback = 0
     processed = os.listdir(graph_data_path)
-    print(processed)
     if processed:
         processed = [item.split('_')[-1] for item in processed]
-        print(processed)
         processed = [item.split('.')[0] for item in processed]
-        print(processed)
         processed = [int(item) for item in processed]
-        print(processed)
         processed_fallback = max(processed)
-        print(processed_fallback)
 
     for i in range(processed_fallback, limit):
         item = pexels.__getitem__(i)
@@ -281,7 +276,8 @@ def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_d
         with open(img_path/f"{item['image_id'].split('.')[0]}_rest.json", "w") as outfile:
             json.dump(graph_data, outfile)
 
-        if i+1 % 50 == 0:
+        if (i + 1) % 50 == 0:
+            print("saving dataframe")
             df = pd.DataFrame.from_dict(results)
             df.to_csv(graph_data_path / f"{filename}_{i}.csv", sep=',', index=True)
             '''
