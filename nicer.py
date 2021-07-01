@@ -345,31 +345,31 @@ class NICER(nn.Module):
                                                            initial_filters=user_preset_filters, gamma=self.gamma)
             elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES':
                 return self.loss_func_mse(ia_pre_ratings['styles_change_strength'],
-                                                 torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]).to(
+                                                 torch.zeros(1, 9).to(
                                                      self.device))
             elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_REG':
                 if re_init:
                     return loss_with_filter_regularization((ia_pre_ratings['styles_change_strength'] * 1.5).cpu(),
-                                                           torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]),
+                                                           torch.zeros(1, 9),
                                                            self.loss_func_mse.cpu(), self.filters.cpu(), gamma=self.gamma)
                 else:
                     return loss_with_filter_regularization((ia_pre_ratings['styles_change_strength'] * 1.5).cpu(),
-                                                           torch.zeros(ia_pre_ratings['styles_change_strength'].size()[1]),
+                                                           torch.zeros(1, 9),
                                                            self.loss_func_mse.cpu(), self.filters.cpu(),
                                                            initial_filters=user_preset_filters, gamma=self.gamma)
             elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_HINGE':
                 ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
                 return self.loss_func_mse(ratings,
-                                          torch.zeros(ratings.size()[1]).to(self.device))
+                                          torch.zeros(1, 9).to(self.device))
             elif config.SSMTPIAA_loss == 'MSE_STYLE_CHANGES_HINGE_REG':
                 ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
                 if re_init:
                     return loss_with_filter_regularization((ratings * 1.5).cpu(),
-                                                           torch.zeros(ratings.size()[1]),
+                                                           torch.zeros(1, 9),
                                                            self.loss_func_mse.cpu(), self.filters.cpu(), gamma=self.gamma)
                 else:
                     return loss_with_filter_regularization((ratings * 1.5).cpu(),
-                                                           torch.zeros(ratings.size()[1]),
+                                                           torch.zeros(1, 9),
                                                            self.loss_func_mse.cpu(), self.filters.cpu(),
                                                            initial_filters=user_preset_filters, gamma=self.gamma)
             elif config.SSMTPIAA_loss == 'BCE_SCORE':
@@ -401,7 +401,7 @@ class NICER(nn.Module):
 
                 ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
                 styles_loss = self.loss_func_mse(ratings,
-                                                 torch.zeros(ratings.size()[1]).to(self.device))
+                                                 torch.zeros(1, 9).to(self.device))
 
                 composite_loss = score_loss * torch.pow(ia_pre_ratings['score'], config.composite_pow) + \
                                  styles_loss * (1 - torch.pow(ia_pre_ratings['score'], config.composite_pow))
@@ -568,7 +568,9 @@ class NICER(nn.Module):
                     break
 
                 if config.automatic_epoch and loss_buffer.get_std_dev() is not None:
-                    if max(loss_buffer.data) - min(loss_buffer.data) < 0.035:
+                    print(loss_buffer.data)
+                    print(max(loss_buffer.data) - min(loss_buffer.data))
+                    if max(loss_buffer.data) - min(loss_buffer.data) < 0.002:
                         break
 
                 print_msg("Iteration {} of {}".format(i, epochs), 2)
