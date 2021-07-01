@@ -25,7 +25,6 @@ def abs_mean(list):
 
 
 def preprocess_image(pil_img, only_jans_transform=False):
-    print(type(pil_img))
     pil_img = Image.fromarray(normalize_brightness(pil_img, input_is_PIL=True))
     if only_jans_transform:
         return jans_transform(pil_img)
@@ -234,7 +233,7 @@ def evaluate_editing_recovery_pexels(nicer, img_path: Path, graph_data_path: Pat
         processed = [item.split('_')[-1] for item in processed]
         processed = [item.split('.')[0] for item in processed]
         processed = [int(item) for item in processed]
-        processed_fallback = max(processed)
+        processed_fallback = max(processed) + 1
 
     for i in range(processed_fallback, limit):
         item = pexels.__getitem__(i)
