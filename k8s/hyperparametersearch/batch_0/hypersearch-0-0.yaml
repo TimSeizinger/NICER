@@ -6,7 +6,7 @@
         spec:
           template:
             spec:
-              priorityClassName: research-low
+              priorityClassName: research-med
               restartPolicy: "OnFailure"
               containers:
                 - name: hyperparam-test
