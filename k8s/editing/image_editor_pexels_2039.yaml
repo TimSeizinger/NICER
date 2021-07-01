@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: edit-img
+  name: edit-pexels-2039
 spec:
   template:
     spec:
@@ -34,7 +34,7 @@ spec:
               name: dshm
           command:
             - python
-            - edit_img_pexels.py
+            - edit_img_pexels_2039.py
       volumes:
         - name: dataset
           cephfs:

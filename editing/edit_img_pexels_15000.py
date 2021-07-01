@@ -20,7 +20,7 @@ class Pexels:
         self.normalize = normalize
         self.horizontal_flip = horizontal_flip
         self.percentage_of_dataset = percentage_of_dataset
-        path = Path('dataset_processing/pexels_test_set_2039.csv')
+        path = Path('dataset_processing/pexels_test_set_15000.csv')
         self.files = pd.read_csv(path)
         if self.percentage_of_dataset is not None:
             self.files = self.files[: int(len(self.files) * (self.percentage_of_dataset / 100))]
