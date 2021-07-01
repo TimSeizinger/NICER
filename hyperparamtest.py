@@ -5,8 +5,8 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 import config
-from nicer import NICER
-from analysis_utils import evaluate_editing_recovery_pexels
+#from nicer import NICER
+#from analysis_utils import evaluate_editing_recovery_pexels
 
 # Init stuff
 import sys
@@ -45,6 +45,7 @@ if not os.path.isdir(out/folder):
 if not os.path.isdir(out/folder/data):
     os.mkdir(out/folder/data)
 
+'''
 # Initialize Data Loader and NICER
 nicer = NICER(config.can_checkpoint_path, config.nima_checkpoint_path)
 
@@ -54,6 +55,7 @@ nicer.config.gamma = gamma
 nicer.config.composite_pow = score_pow
 nicer.config.composite_balance = composite_balance
 nicer.config.adaptive_score_offset = adaptive_score_offset
+'''
 
 # Process images
 '''

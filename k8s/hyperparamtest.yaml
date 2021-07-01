@@ -9,7 +9,7 @@ spec:
       restartPolicy: "Never"
       containers:
         - name: hyperparam-test
-          image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:latest
+          image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.2
           imagePullPolicy: "Always"
           env:
             - name: HOME
