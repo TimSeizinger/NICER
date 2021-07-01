@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: edit-img
+  name: hyperparam-search-test
 spec:
   template:
     spec:
@@ -9,7 +9,7 @@ spec:
       restartPolicy: "Never"
       containers:
         - name: hyperparam-test
-          image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.3
+          image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:latest
           imagePullPolicy: "Always"
           env:
             - name: HOME
