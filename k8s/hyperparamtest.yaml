@@ -27,9 +27,9 @@ spec:
             - mountPath: /workspace
               name: workspace
             - mountPath: /dataset-orig
-              name: dataset_orig
+              name: dataset-orig
             - mountPath: /dataset-dist
-              name: dataset_dist
+              name: dataset-dist
             - mountPath: /out
               name: out
             - mountPath: /dev/shm
