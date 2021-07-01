@@ -497,13 +497,7 @@ class NICER(nn.Module):
 
             Returns a re-sized 8bit image as np.array
         """
-
-        print(config.optim_lr)
-        print(config.gamma)
-        print(config.composite_pow)
-        print(config.composite_balance)
-        print(config.adaptive_score_offset)
-
+        
         if headless_mode:
             self.queue = None
             self.in_queue = None
