@@ -6,12 +6,12 @@ out = Path("k8s/hyperparametersearch")
 if not os.path.isdir(out):
     os.mkdir(out)
 
-for i in range(2):
-    folder = f"batch_{i}"
+for i in range(1, 5):
+    folder = f"batch_{5}"
     if not os.path.isdir(out / folder):
         os.mkdir(out / folder)
 
-    for j in range(10):
+    for j in range(1):
         optim_lr: float = random.uniform(0.01, 0.7)
         gamma: float = random.uniform(0.0, 0.3)
         score_pow: float = random.uniform(-0.5, 3)
@@ -110,5 +110,5 @@ for i in range(2):
         
         '''
 
-        with open(out/folder/f"hypersearch-{optim_lr}-{gamma}-{score_pow}-{composite_balance}-{adaptive_score_offset}.yaml", "w") as yamlfile:
+        with open(out/folder/f"hypersearch-{i}-{j}.yaml", "w") as yamlfile:
             yamlfile.write(yaml)
