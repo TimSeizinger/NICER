@@ -165,14 +165,14 @@ class LandscapesTop:
 class Pexels_hyperparamsearch:
     def __init__(
         self,
-        image_orig_dir: Path = Path('datasets/pexels_dist/images'),
-        image_dist_dir: Path = Path('datasets/pexels/images'),
+        image_orig_dir: Path = Path('datasets/pexels/images'),
+        image_dist_dir: Path = Path('datasets/pexels_dist/images'),
         sample_size: int = 5000,
         horizontal_flip: bool = False,
         normalize: bool = False,
     ):
         self.image_orig_dir = image_orig_dir
-        self.image_dist_dit = image_dist_dir
+        self.image_dist_dir = image_dist_dir
         self.normalize = normalize
         self.horizontal_flip = horizontal_flip
         photos = os.listdir(image_dist_dir)
@@ -194,7 +194,7 @@ class Pexels_hyperparamsearch:
 
     def _actualgetitem(self, idx: int):
         photo = str(self.files.iloc[idx][0])
-        path_dist = self.image_dist_dit / photo
+        path_dist = self.image_dist_dir / photo
         print(f"path_dist: {path_dist}")
         path_orig = self.image_orig_dir / f"{photo.split('_')[0]}.{photo.split('.')[-1]}"
         print(f"path_orig: {path_orig}")
