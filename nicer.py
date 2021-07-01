@@ -582,6 +582,8 @@ class NICER(nn.Module):
                                                             nima_vgg16=nima_vgg16, nima_mobilenetv2=nima_mobilenetv2,
                                                             ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
 
+                print(type(enhanced_img))
+                
                 img_enhanced = None
                 if ssmtpiaa:
                     if score_target is None:
