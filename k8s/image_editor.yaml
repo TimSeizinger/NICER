@@ -22,7 +22,7 @@ spec:
               cpu: ".1"
               memory: "2Gi"
           volumeMounts:
-            - mountPath: /workspace
+            - mountPath: /workdir
               name: workspace
             - mountPath: /scratch
               name: scratch
