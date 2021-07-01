@@ -232,9 +232,9 @@ def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_d
     processed = os.listdir(graph_data_path)
     print(processed)
     if processed:
-        processed = [item.split('.')[0] for item in processed]
-        print(processed)
         processed = [item.split('_')[-1] for item in processed]
+        print(processed)
+        processed = [item.split('.')[0] for item in processed]
         print(processed)
         processed = [int(item) for item in processed]
         print(processed)
