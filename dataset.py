@@ -166,7 +166,7 @@ class Pexels_hyperparamsearch:
     def __init__(
         self,
         image_orig_dir: Path = Path('datasets/pexels_dist/images'),
-        image_dist_dir: Path = Path('datasets/pexels_dist/images'),
+        image_dist_dir: Path = Path('datasets/pexels/images'),
         sample_size: int = 5000,
         horizontal_flip: bool = False,
         normalize: bool = False,
