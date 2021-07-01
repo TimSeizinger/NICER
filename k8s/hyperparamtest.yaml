@@ -8,7 +8,7 @@ spec:
       priorityClassName: research-med
       restartPolicy: "Never"
       containers:
-        - name: hyperparam_test
+        - name: hyperparam-test
           image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.3
           imagePullPolicy: "Always"
           env:
@@ -26,9 +26,9 @@ spec:
           volumeMounts:
             - mountPath: /workspace
               name: workspace
-            - mountPath: /dataset_orig
+            - mountPath: /dataset-orig
               name: dataset_orig
-            - mountPath: /dataset_dist
+            - mountPath: /dataset-dist
               name: dataset_dist
             - mountPath: /out
               name: out
@@ -50,7 +50,7 @@ spec:
             - --adaptive_score_offset
             - '0.3'
       volumes:
-        - name: dataset_orig
+        - name: dataset-orig
           cephfs:
             monitors:
               - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
@@ -58,7 +58,7 @@ spec:
             path: "/home/stud/seizinger/git/NICER/datasets/pexels/images"
             secretRef:
               name: ceph-secret
-        - name: dataset_dist
+        - name: dataset-dist
           cephfs:
             monitors:
               - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
