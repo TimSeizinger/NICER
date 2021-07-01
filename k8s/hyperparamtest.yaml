@@ -10,7 +10,6 @@ spec:
       containers:
         - name: hyperparam-test
           image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.3
-          workingDir: /workdir
           imagePullPolicy: "Always"
           env:
             - name: HOME
@@ -50,6 +49,8 @@ spec:
             - '0'
             - --adaptive_score_offset
             - '0.3'
+      imagePullSecrets:
+        - name: lsx-registry
       volumes:
         - name: dataset-orig
           cephfs:
