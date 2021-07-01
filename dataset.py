@@ -165,8 +165,8 @@ class LandscapesTop:
 class Pexels_hyperparamsearch:
     def __init__(
         self,
-        image_orig_dir: Path = Path('dataset-orig/'),
-        image_dist_dir: Path = Path('dataset-dist/'),
+        image_orig_dir: Path = Path('datasets/pexels_dist/images'),
+        image_dist_dir: Path = Path('datasets/pexels_dist/images'),
         sample_size: int = 5000,
         horizontal_flip: bool = False,
         normalize: bool = False,
