@@ -6,7 +6,7 @@
         spec:
           template:
             spec:
-              priorityClassName: research-med
+              priorityClassName: research-low
               restartPolicy: "OnFailure"
               containers:
                 - name: hyperparam-test
@@ -40,15 +40,15 @@
                     - python
                     - hyperparamtest.py
                     - --optim_lr
-                    - '0.4463155347593133'
+                    - '0.692671774559484'
                     - --gamma
-                    - '0.2807078127235869'
+                    - '0.29378373050092804'
                     - --score_pow
-                    - '2.8271962924002003'
+                    - '2.236987285105141'
                     - --composite_balance
-                    - '0.686275712037467'
+                    - '0.7223211395899516'
                     - --adaptive_score_offset
-                    - '0.664353795481385'
+                    - '0.755692597021434'
               imagePullSecrets:
                 - name: lsx-registry
               volumes:

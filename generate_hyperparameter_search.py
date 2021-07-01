@@ -6,12 +6,12 @@ out = Path("k8s/hyperparametersearch")
 if not os.path.isdir(out):
     os.mkdir(out)
 
-for i in range(1, 5):
+for i in range(10, 20):
     folder = f"batch_{i}"
     if not os.path.isdir(out / folder):
         os.mkdir(out / folder)
 
-    for j in range(5):
+    for j in range(50):
         optim_lr: float = random.uniform(0.01, 0.7)
         gamma: float = random.uniform(0.0, 0.3)
         score_pow: float = random.uniform(-0.5, 3)
