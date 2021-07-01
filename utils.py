@@ -212,7 +212,6 @@ def loss_with_filter_regularization(rating, target, loss_func, filters, gamma=co
         print_msg("L2 Term: {}".format(l2_term), 3)
     else:
         l2_term = sum([fil ** 2 for fil in filters])  # l2: sum the squares of all filters
-    print(l2_term)
 
     return distance_term + gamma * l2_term
 
@@ -221,7 +220,6 @@ def loss_with_visual_regularization(rating, target, loss_func, img, enhanced_img
     distance_term = loss_func(rating, target)
 
     vis_difference = ((1 - ssim(img, enhanced_img, multichannel=True)) * 5) ** 2
-    print(vis_difference)
 
     return distance_term + gamma * vis_difference
 

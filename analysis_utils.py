@@ -13,6 +13,7 @@ from statistics import mean
 from autobright import normalize_brightness
 from PIL import Image
 from pathlib import Path
+import os
 
 
 
@@ -227,7 +228,16 @@ def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_d
     if limit is None:
         limit = len(pexels)
 
-    for i in range(limit):
+    processed_fallback = 0
+    processed = os.listdir(graph_data_path)
+    print(processed)
+    if processed:
+        processed = [item.split('.')[0] for item in processed]
+        processed = [item.split('_')[-1] for item in processed]
+        processed = [int(item) for item in processed]
+        processed_fallback = max(processed)
+
+    for i in range(processed_fallback, limit):
         item = pexels.__getitem__(i)
         print('processing ' + str(item['image_id']) + ' in iteration ' + str(i))
         results['image_id'].append(item['image_id'])
@@ -270,16 +280,20 @@ def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_d
         if i+1 % 50 == 0:
             df = pd.DataFrame.from_dict(results)
             df.to_csv(graph_data_path / f"{filename}_{i}.csv", sep=',', index=True)
+            '''
             html = df.to_html()
             with open(graph_data_path / f"{filename}_{i}.html", 'w') as file:
                 file.write(html)
+            '''
             # reset results dictionary
             for key in results:
                 results[key] = []
 
     if results['image_id']:
         df = pd.DataFrame.from_dict(results)
-        df.to_csv(graph_data_path / f"_{limit}.csv", sep=',', index=True)
+        df.to_csv(graph_data_path / f"{filename}_{limit}.csv", sep=',', index=True)
+        '''
         html = df.to_html()
-        with open(graph_data_path / f"_{limit}.html", 'w') as file:
+        with open(graph_data_path / f"{filename}_{limit}.html", 'w') as file:
             file.write(html)
+        '''
