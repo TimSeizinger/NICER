@@ -23,7 +23,7 @@
                       memory: "10Gi"
                     requests:
                       nvidia.com/gpu: "1"
-                      cpu: "48"
+                      cpu: "16"
                       memory: "10Gi"
                   volumeMounts:
                     - mountPath: /workdir
@@ -40,15 +40,15 @@
                     - python
                     - hyperparamtest.py
                     - --optim_lr
-                    - '0.14860183682058536'
+                    - '0.011684663093429762'
                     - --gamma
-                    - '0.29926542805094686'
+                    - '0.0007944671845604767'
                     - --score_pow
-                    - '2.8822442764510527'
+                    - '1.3033287473063802'
                     - --composite_balance
-                    - '-0.13366289487399774'
+                    - '-0.30025835897359143'
                     - --adaptive_score_offset
-                    - '0.7213598647962417'
+                    - '0.5921770204993445'
               imagePullSecrets:
                 - name: lsx-registry
               volumes:

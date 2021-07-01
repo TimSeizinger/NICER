@@ -6,7 +6,7 @@ out = Path("k8s/hyperparametersearch")
 if not os.path.isdir(out):
     os.mkdir(out)
 
-for i in range(10, 20):
+for i in range(20):
     folder = f"batch_{i}"
     if not os.path.isdir(out / folder):
         os.mkdir(out / folder)
@@ -43,7 +43,7 @@ for i in range(10, 20):
                       memory: "10Gi"
                     requests:
                       nvidia.com/gpu: "1"
-                      cpu: "48"
+                      cpu: "16"
                       memory: "10Gi"
                   volumeMounts:
                     - mountPath: /workdir

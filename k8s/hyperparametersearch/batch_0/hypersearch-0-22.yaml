@@ -40,15 +40,15 @@
                     - python
                     - hyperparamtest.py
                     - --optim_lr
-                    - '0.2787816415860945'
+                    - '0.04997410780790957'
                     - --gamma
-                    - '0.010213305140566042'
+                    - '0.291522415149092'
                     - --score_pow
-                    - '2.404364952822732'
+                    - '1.2783037588502169'
                     - --composite_balance
-                    - '0.14501576387770587'
+                    - '0.08579880373105908'
                     - --adaptive_score_offset
-                    - '0.7059534418144565'
+                    - '0.5215876576804106'
               imagePullSecrets:
                 - name: lsx-registry
               volumes:
