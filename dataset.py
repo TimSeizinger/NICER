@@ -167,13 +167,9 @@ class Pexels_hyperparamsearch:
         self,
         image_orig_dir: Path = Path('datasets/pexels/images'),
         image_dist_dir: Path = Path('datasets/pexels_dist/images'),
-        horizontal_flip: bool = False,
-        normalize: bool = False,
     ):
         self.image_orig_dir = image_orig_dir
         self.image_dist_dir = image_dist_dir
-        self.normalize = normalize
-        self.horizontal_flip = horizontal_flip
         photos = os.listdir(image_dist_dir)
         self.files = pd.DataFrame(data={'images': photos})
 

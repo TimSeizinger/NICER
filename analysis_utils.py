@@ -253,8 +253,6 @@ def evaluate_editing_recovery_pexels(nicer, img_path: Path, graph_data_path: Pat
         # Evaluate distorted image and save scores to dictionary
         evaluate_image(item['img_dist'], nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='dist')
 
-        #img_dist = img_as_float(np.array(item['img_dist'])) #TODO probably not useful
-
         print(f"editing {item['image_id']} using {loss} in iteration {i}")
 
         # Edit image
