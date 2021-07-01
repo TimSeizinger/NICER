@@ -22,6 +22,7 @@ from IA_folder.IA import IA
 from IA2NIMA.NIMA import NIMA
 
 from skimage import img_as_float
+from skimage.metrics import structural_similarity as ssim
 
 class NICER(nn.Module):
 
@@ -488,7 +489,7 @@ class NICER(nn.Module):
             self.queue.put(filters_for_queue)
 
     def enhance_image(self, image_path, re_init=True, fixFilters=None, epochs=config.epochs, thread_stopEvent=None,
-                      headless_mode=False, nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True):
+                      headless_mode=False, img_orig=None, nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True):
         """
             optimization routine that is called to enhance an image.
             Usually this is called from the NICER button in the GUI.
@@ -510,6 +511,9 @@ class NICER(nn.Module):
         ia_fine_scores = []
         ia_fine_losses = []
 
+        # SSIM to original image when performing recovery
+        distances_to_orig = []
+
         if re_init:
             self.re_init()
             user_preset_filters = None
@@ -525,6 +529,12 @@ class NICER(nn.Module):
             pil_image = image_path
             bright_normalized_img = normalize_brightness(pil_image, input_is_PIL=True)
             pil_image = Image.fromarray(bright_normalized_img)
+
+        if img_orig:
+            bright_normalized_img_orig = normalize_brightness(img_orig, input_is_PIL=True)
+            img_orig = Image.fromarray(bright_normalized_img_orig)
+            img_orig = nima_transform(img_orig)
+            img_orig = np.transpose(img_as_float(img_orig.cpu().detach().squeeze().numpy()))
 
         image_tensor_transformed = nima_transform(pil_image)
 
@@ -552,7 +562,6 @@ class NICER(nn.Module):
         else:
             img = None
 
-
         if config.optim == 'sgd' or config.optim == 'adam':
             for i in range(epochs):
                 if headless_mode is False and thread_stopEvent.is_set():
@@ -572,16 +581,20 @@ class NICER(nn.Module):
                                                             headless_mode=headless_mode,
                                                             nima_vgg16=nima_vgg16, nima_mobilenetv2=nima_mobilenetv2,
                                                             ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
+
+                img_enhanced = None
                 if ssmtpiaa:
                     if score_target is None:
                         score_target = min(ia_pre_ratings['score'].item() + config.adaptive_score_offset, 1.0)
                         print('score_target is: ' + str(score_target))
                     if config.SSMTPIAA_loss == 'MSE_SCORE_VISUAL_REG':
                         img_enhanced = np.transpose(img_as_float(enhanced_img.cpu().detach().squeeze().numpy()))
-                    else:
-                        img_enhanced = None
-                else:
-                    img_enhanced = None
+
+                if not img_enhanced and img_orig:
+                    img_enhanced = np.transpose(img_as_float(enhanced_img.cpu().detach().squeeze().numpy()))
+
+                if img_orig:
+                    distances_to_orig.append(ssim(img_orig, img_enhanced, multichannel=True))
 
                 nima_vgg16_loss, nima_mobilenetv2_loss, ia_pre_loss, ia_fine_loss = self.calculate_losses(
                     nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, score_target,
@@ -608,13 +621,6 @@ class NICER(nn.Module):
                 self.optimizer.step()
 
                 self.put_filters_in_queue(i, headless_mode)
-
-                '''
-                ssim_img_enhanced = np.transpose(img_as_float(enhanced_img.cpu().detach().squeeze().numpy()))
-                print(ssim_img_enhanced.shape)
-
-                print(ssim(ssim_img_in, ssim_img_enhanced, multichannel=True))
-                '''
 
         elif config.optim == 'cma':  # CMA optimizer
             with torch.no_grad():
@@ -850,6 +856,8 @@ class NICER(nn.Module):
             if ssmtpiaa_fine:
                 graph_data['ia_fine_losses'] = ia_fine_losses
                 graph_data['ia_fine_scores'] = ia_fine_scores
+            if distances_to_orig:
+                graph_data['distances_to_orig'] = distances_to_orig
 
             if not headless_mode:
                 self.queue.put(graph_data)

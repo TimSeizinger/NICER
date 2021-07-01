@@ -250,6 +250,7 @@ def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_d
 
         # Edit image
         restored_image, graph_data = nicer.enhance_image(item['img_dist'], re_init=True, headless_mode=True,
+                                                         img_orig=item['img_orig'],
                                                          nima_vgg16=nima_vgg16, nima_mobilenetv2=nima_mobilenetv2,
                                                          ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
         img_rest = img_as_float(np.array(restored_image))
@@ -259,7 +260,6 @@ def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_d
         evaluate_image(restored_image, nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='rest')
 
         similarity = 1 - ssim(img_orig, img_rest, multichannel=True)
-        print(similarity)
         results['distance_to_orig'].append(similarity)
 
         # Export image with rating history
@@ -270,9 +270,9 @@ def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_d
 
         if i+1 % 50 == 0:
             df = pd.DataFrame.from_dict(results)
-            df.to_csv(graph_data_path/filename/f"_{i}.csv", sep=',', index=True)
+            df.to_csv(graph_data_path / f"_{i}.csv", sep=',', index=True)
             html = df.to_html()
-            with open(graph_data_path/filename/f"_{i}.html", 'w') as file:
+            with open(graph_data_path / f"_{i}.html", 'w') as file:
                 file.write(html)
             # reset results dictionary
             for key in results:
@@ -280,7 +280,7 @@ def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_d
 
     if results['image_id']:
         df = pd.DataFrame.from_dict(results)
-        df.to_csv(graph_data_path / filename / f"_{limit}.csv", sep=',', index=True)
+        df.to_csv(graph_data_path / f"_{limit}.csv", sep=',', index=True)
         html = df.to_html()
-        with open(graph_data_path / filename / f"_{limit}.html", 'w') as file:
+        with open(graph_data_path / f"_{limit}.html", 'w') as file:
             file.write(html)

@@ -195,9 +195,7 @@ class Pexels_hyperparamsearch:
     def _actualgetitem(self, idx: int):
         photo = str(self.files.iloc[idx][0])
         path_dist = self.image_dist_dir / photo
-        print(f"path_dist: {path_dist}")
         path_orig = self.image_orig_dir / f"{photo.split('_')[0]}.{photo.split('.')[-1]}"
-        print(f"path_orig: {path_orig}")
         img_orig: Image = Image.open(path_orig).convert("RGB")
         img_dist: Image = Image.open(path_dist).convert("RGB")
 
