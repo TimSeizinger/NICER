@@ -219,7 +219,7 @@ def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_d
                             nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True):
 
     results = get_results_dict(['orig', 'dist', 'rest'], nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine)
-    results['dist_filters'] = []
+    #results['dist_filters'] = []
     results['distance_to_orig'] = []
 
     pexels = Pexels_hyperparamsearch(sample_size=sample_size)
@@ -235,6 +235,7 @@ def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_d
         # Set loss
         nicer.config.SSMTPIAA_loss = loss
 
+
         # Evaluate unedited image and save scores to dictionary
         evaluate_image(item['img_orig'], nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='orig')
 
@@ -243,7 +244,7 @@ def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_d
         # Evaluate distorted image and save scores to dictionary
         evaluate_image(item['img_dist'], nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='dist')
 
-        img_dist = img_as_float(np.array(item['img_dist']))
+        #img_dist = img_as_float(np.array(item['img_dist'])) #TODO probably not useful
 
         print(f"editing {item['image_id']} using {loss} in iteration {i}")
 
@@ -273,6 +274,7 @@ def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_d
             html = df.to_html()
             with open(graph_data_path/filename/f"_{i}.html", 'w') as file:
                 file.write(html)
+            # reset results dictionary
             for key in results:
                 results[key] = []
 
@@ -282,5 +284,3 @@ def evaluate_editing_recovery_pexels(nicer, sample_size, img_path: Path, graph_d
         html = df.to_html()
         with open(graph_data_path / filename / f"_{limit}.html", 'w') as file:
             file.write(html)
-        for key in results:
-            results[key] = []

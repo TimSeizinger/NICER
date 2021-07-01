@@ -55,11 +55,9 @@ nicer.config.adaptive_score_offset = adaptive_score_offset
 
 
 # Process images
-'''
 evaluate_editing_recovery_pexels(nicer=nicer, sample_size=args.sample_size, img_path=out/folder,
                                  graph_data_path=out/folder/data, filename=folder, loss='Composite',
-                                 nima_vgg16=False, nima_mobilenetv2=False, ssmtpiaa=True, ssmtpiaa_fine=False)
-'''
+                                 nima_vgg16=False, nima_mobilenetv2=False, ssmtpiaa=True, ssmtpiaa_fine=False, limit=10)
 
 elapsed_time = time.time() - start_time
 elapsed_time = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
