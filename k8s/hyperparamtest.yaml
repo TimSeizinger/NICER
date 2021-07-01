@@ -38,17 +38,17 @@ spec:
             - python
             - hyperparamtest.py
             - --sample_size
-            - 100
+            - '100'
             - --optim_lr
-            - 0.025
+            - '0.025'
             - --gamma
-            - 0.1
+            - '0.1'
             - --score_pow
-            - 1.5
+            - '1.5'
             - --composite_balance
-            - 0
+            - '0'
             - --adaptive_score_offset
-            - 0.3
+            - '0.3'
       volumes:
         - name: dataset_orig
           cephfs:

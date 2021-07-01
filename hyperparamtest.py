@@ -27,8 +27,16 @@ args = parser.parse_args()
 
 print(args)
 
+#Convert args to their datatypes
+sample_size: int = float(args.sample_size)
+optim_lr: float = float(args.optim_lr)
+gamma: float = float(args.gamma)
+score_pow: float = float(args.score_pow)
+composite_balance: float = float(args.composite_balance)
+adaptive_score_offset: float = float(args.adaptive_score_offset)
+
 # Initialize output folders
-folder = Path(f"{args.optim_lr}_{args.gamma}_{args.score_pow}_{args.composite_balance}_{args.adaptive_score_offset}")
+folder = Path(f"{sample_size}_{optim_lr}_{gamma}_{score_pow}_{composite_balance}_{adaptive_score_offset}")
 out = Path("out")
 data = Path("data")
 if not os.path.isdir(out/folder):
@@ -41,11 +49,11 @@ if not os.path.isdir(out/folder/data):
 nicer = NICER(config.can_checkpoint_path, config.nima_checkpoint_path)
 
 # Set hyperparameters
-nicer.config.optim_lr = args.optim_lr
-nicer.config.gamma = args.gamma
-nicer.config.composite_pow = args.score_pow
-nicer.config.composite_balance = args.composite_balance
-nicer.config.adaptive_score_offset = args.adaptive_score_offset
+nicer.config.optim_lr = optim_lr
+nicer.config.gamma = gamma
+nicer.config.composite_pow = score_pow
+nicer.config.composite_balance = composite_balance
+nicer.config.adaptive_score_offset = adaptive_score_offset
 
 # Process images
 '''
