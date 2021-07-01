@@ -5,8 +5,8 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 import config
-#from nicer import NICER
-#from analysis_utils import evaluate_editing_recovery_pexels
+from nicer import NICER
+from analysis_utils import evaluate_editing_recovery_pexels
 
 # Init stuff
 import sys
@@ -25,10 +25,8 @@ parser.add_argument("--composite_balance", type=float, required=True)
 parser.add_argument("--adaptive_score_offset", type=float, required=True)
 args = parser.parse_args()
 
-print(args)
-
 #Convert args to their datatypes
-sample_size: int = float(args.sample_size)
+sample_size: int = int(args.sample_size)
 optim_lr: float = float(args.optim_lr)
 gamma: float = float(args.gamma)
 score_pow: float = float(args.score_pow)
@@ -45,8 +43,7 @@ if not os.path.isdir(out/folder):
 if not os.path.isdir(out/folder/data):
     os.mkdir(out/folder/data)
 
-'''
-# Initialize Data Loader and NICER
+# Initialize NICER
 nicer = NICER(config.can_checkpoint_path, config.nima_checkpoint_path)
 
 # Set hyperparameters
@@ -55,7 +52,7 @@ nicer.config.gamma = gamma
 nicer.config.composite_pow = score_pow
 nicer.config.composite_balance = composite_balance
 nicer.config.adaptive_score_offset = adaptive_score_offset
-'''
+
 
 # Process images
 '''
