@@ -23,6 +23,7 @@ spec:
               name: localdir
           command:
             - python3
+            - hyperparamtest.py
       imagePullSecrets:
         - name: lsx-registry
       restartPolicy: "Never"

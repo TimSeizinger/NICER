@@ -25,8 +25,8 @@ spec:
               cpu: "48"
               memory: "10Gi"
           volumeMounts:
-            - mountPath: /workspace
-              name: workspace
+            - mountPath: /workdir
+              name: localdir
             - mountPath: /dataset-orig
               name: dataset-orig
             - mountPath: /dataset-dist
@@ -77,7 +77,7 @@ spec:
             path: "/home/stud/seizinger/git/NICER/out"
             secretRef:
               name: ceph-secret
-        - name: workspace
+        - name: localdir
           cephfs:
             monitors:
               - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
