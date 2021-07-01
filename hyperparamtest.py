@@ -17,7 +17,6 @@ start_time = time.time()
 
 # Arguments from yaml
 parser = ArgumentParser()
-parser.add_argument("--sample_size", type=int, required=True)
 parser.add_argument("--optim_lr", type=float, required=True)
 parser.add_argument("--gamma", type=float, required=True)
 parser.add_argument("--score_pow", type=float, required=True)
@@ -26,7 +25,6 @@ parser.add_argument("--adaptive_score_offset", type=float, required=True)
 args = parser.parse_args()
 
 #Convert args to their datatypes
-sample_size: int = int(args.sample_size)
 optim_lr: float = float(args.optim_lr)
 gamma: float = float(args.gamma)
 score_pow: float = float(args.score_pow)
@@ -34,7 +32,7 @@ composite_balance: float = float(args.composite_balance)
 adaptive_score_offset: float = float(args.adaptive_score_offset)
 
 # Initialize output folders
-folder = Path(f"{sample_size}_{optim_lr}_{gamma}_{score_pow}_{composite_balance}_{adaptive_score_offset}")
+folder = Path(f"{optim_lr}_{gamma}_{score_pow}_{composite_balance}_{adaptive_score_offset}")
 out = Path("out")
 data = Path("data")
 if not os.path.isdir(out/folder):
@@ -57,7 +55,7 @@ nicer.config.adaptive_score_offset = adaptive_score_offset
 # Process images
 evaluate_editing_recovery_pexels(nicer=nicer, img_path=out/folder,
                                  graph_data_path=out/folder/data, filename=folder, loss='COMPOSITE',
-                                 nima_vgg16=False, nima_mobilenetv2=False, ssmtpiaa=True, ssmtpiaa_fine=False, limit=98)
+                                 nima_vgg16=False, nima_mobilenetv2=False, ssmtpiaa=True, ssmtpiaa_fine=False, limit=55)
 
 elapsed_time = time.time() - start_time
 elapsed_time = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))

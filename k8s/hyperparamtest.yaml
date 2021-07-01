@@ -38,8 +38,6 @@ spec:
           command:
             - python
             - hyperparamtest.py
-            - --sample_size
-            - '100'
             - --optim_lr
             - '0.025'
             - --gamma
