@@ -10,7 +10,7 @@ spec:
         - name: nicer-edit-test
           image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.3
           workingDir: /workdir
-          imagePullPolicy: "IfNotPresent"
+          imagePullPolicy: "Always"
           resources:
             limits:
               cpu: "4"
@@ -23,7 +23,6 @@ spec:
               name: localdir
           command:
             - python3
-            - analysis/pexels_analysis.py
       imagePullSecrets:
         - name: lsx-registry
       restartPolicy: "Never"
