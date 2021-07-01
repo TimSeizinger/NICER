@@ -568,12 +568,10 @@ class NICER(nn.Module):
                     break
 
                 if config.automatic_epoch and loss_buffer.get_std_dev() is not None:
-                    print(loss_buffer.data)
-                    print(max(loss_buffer.data) - min(loss_buffer.data))
                     if max(loss_buffer.data) - min(loss_buffer.data) < 0.002:
                         break
 
-                print_msg("Iteration {} of {}".format(i, epochs), 2)
+                #print_msg("Iteration {} of {}".format(i, epochs), 2)
 
                 self.optimizer.zero_grad()
 
@@ -680,8 +678,6 @@ class NICER(nn.Module):
                     # update filters with the best solution of this iteration
                     self.filters = (torch.tensor(self.optimizer.best.x)/100).to(self.device)
 
-                    print(self.filters)
-
                     # redo forward for visualization
                     enhanced_img, nima_vgg16_distr_of_ratings, nima_mobilenetv2_distr_of_ratings, ia_pre_ratings, \
                     ia_fine_distr_of_ratings = self.get_ratings(image_tensor_transformed, image_tensor_transformed_jan,
@@ -699,8 +695,6 @@ class NICER(nn.Module):
 
                     loss = self.select_loss(nima_vgg16_loss, nima_mobilenetv2_loss, ia_pre_loss, ia_pre_ratings,
                                             ia_fine_loss)
-                    print(loss.item())
-
                     self.append_to_lists(nima_vgg16_scores, nima_mobilenetv2_distr_of_ratings,
                                          nima_vgg16_losses, nima_vgg16_loss,
                                          nima_mobilenetv2_scores, nima_mobilenetv2_distr_of_ratings,
