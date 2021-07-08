@@ -6,7 +6,7 @@ out = Path("k8s/hyperparametersearch")
 if not os.path.isdir(out):
     os.mkdir(out)
 
-for i in range(30, 40):
+for i in range(40, 50):
     folder = f"batch_{i}"
     if not os.path.isdir(out / folder):
         os.mkdir(out / folder)
