@@ -46,8 +46,6 @@ for subfolder in subfolders:
     if (subfolder == "sub") | (subfolder == "successful") | (subfolder == "test") | (subfolder == "batch_data.csv") | (subfolder == "suggestions.csv") | (subfolder == "mean_distances.csv"):
         continue
 
-    subfolder
-
     checkpoints = os.listdir(in_dir / subfolder / "data")
     if not checkpoints:
         print(f"Empty data directory")
@@ -81,7 +79,9 @@ for subfolder in subfolders:
 
         results = {'yaml_name': yaml_names, 'mean_distance_to_orig': mean_distances, 'parameters': parameters}
         results_df = pd.DataFrame(results)
-        results_df.to_csv(in_dir / "mean_distances.csv")
+        results_df.to_csv(in_dir / 'successful' / "mean_distances.csv")
+        results_df.sort_values(by='mean_distance_to_orig', ascending=True, inplace=True)
+        results_df.to_csv(in_dir / 'successful' / "mean_distances_sorted.csv")
     elif maximum_checkpoint > 3000:
         candidates_3000.append(batch_data.loc[batch_data['optim_lr'] == optim_lr].iloc[0][1])
         candidates_3000_length.append(maximum_checkpoint)
@@ -95,6 +95,8 @@ candidates = {'3000': candidates_3000, 'length': candidates_3000_length}
 candidates_df = pd.DataFrame(candidates)
 candidates_df.to_csv(in_dir / "suggestions.csv")
 
-results = {'yaml_name': yaml_names, 'mean_distance_to_orig': mean_distances}
+results = {'yaml_name': yaml_names, 'mean_distance_to_orig': mean_distances, 'parameters': parameters}
 results_df = pd.DataFrame(results)
-results_df.to_csv(in_dir / "mean_distances.csv")
+results_df.to_csv(in_dir / 'successful' / "mean_distances.csv")
+results_df.sort_values(by='mean_distance_to_orig', ascending=True, inplace=True)
+results_df.to_csv(in_dir / 'successful' / "mean_distances_sorted.csv")
