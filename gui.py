@@ -131,7 +131,7 @@ class NicerGui:
             self.gamma = DoubleVar()
             self.gamma_slider = Scale(master, from_=0.005, to=0.5, length=sliderlength, orient=HORIZONTAL,
                                       var=self.gamma, resolution=0.005)
-            self.gamma_slider.set(0.1)
+            self.gamma_slider.set(config.gamma)
 
             self.slider_variables = [self.saturation, self.contrast, self.brightness, self.shadows,
                                      self.highlights, self.exposure, self.locallaplacian, self.nonlocaldehazing]
@@ -232,7 +232,7 @@ class NicerGui:
 
             # Loss Function Selector
             self.selected_ia_pre_loss = StringVar(master)
-            self.selected_ia_pre_loss.set(config.valid_SSMTPIAA_losses[0])
+            self.selected_ia_pre_loss.set(config.SSMTPIAA_loss)
             self.assessor_selection = OptionMenu(master, self.selected_ia_pre_loss, *config.valid_SSMTPIAA_losses, command=self.update_ia_pre_loss)
             self.assessor_selection.place(x=40 + 295, y=button_y + 60)
 

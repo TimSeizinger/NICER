@@ -36,15 +36,17 @@ subfolders = os.listdir(in_dir)
 
 candidates_1500 = []
 candidates_3000 = []
+candidates_3000_length = []
 mean_distances = []
 yaml_names = []
+parameters = []
 
 for subfolder in subfolders:
     print(f"Processing: {subfolder}")
     if (subfolder == "sub") | (subfolder == "successful") | (subfolder == "test") | (subfolder == "batch_data.csv") | (subfolder == "suggestions.csv") | (subfolder == "mean_distances.csv"):
         continue
 
-    subfolder = Path(subfolder)
+    subfolder
 
     checkpoints = os.listdir(in_dir / subfolder / "data")
     if not checkpoints:
@@ -75,19 +77,21 @@ for subfolder in subfolders:
 
         yaml_names.append(yaml_name)
         mean_distances.append(mean_distance)
+        parameters.append(subfolder)
 
-        results = {'yaml_name': yaml_names, 'mean_distance_to_orig': mean_distances}
+        results = {'yaml_name': yaml_names, 'mean_distance_to_orig': mean_distances, 'parameters': parameters}
         results_df = pd.DataFrame(results)
         results_df.to_csv(in_dir / "mean_distances.csv")
     elif maximum_checkpoint > 3000:
-        candidates_1500.append(batch_data.loc[batch_data['optim_lr'] == optim_lr].iloc[0][1])
+        candidates_3000.append(batch_data.loc[batch_data['optim_lr'] == optim_lr].iloc[0][1])
+        candidates_3000_length.append(maximum_checkpoint)
         print("Added to 3000+ candidates")
     elif maximum_checkpoint > 1500:
         candidates_1500.append(batch_data.loc[batch_data['optim_lr'] == optim_lr].iloc[0][1])
         print("Added to 1500+ candidates")
 
 
-candidates = {'3000': candidates_3000}
+candidates = {'3000': candidates_3000, 'length': candidates_3000_length}
 candidates_df = pd.DataFrame(candidates)
 candidates_df.to_csv(in_dir / "suggestions.csv")
 
