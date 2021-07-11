@@ -53,7 +53,10 @@ for subfolder in subfolders:
 
     optim_lr = f"_{checkpoints[0].split('_')[0]}"
 
-    yaml_name = batch_data.loc[batch_data['optim_lr'] == optim_lr].iloc[0][1]
+    if optim_lr == "_0.02":
+        yaml_name = "handpicked"
+    else:
+        yaml_name = batch_data.loc[batch_data['optim_lr'] == optim_lr].iloc[0][1]
     print(f"Yaml: {yaml_name}")
 
     checkpoint_iterations = [int(checkpoint.split('_')[-1].split('.')[0]) for checkpoint in checkpoints]
