@@ -489,7 +489,7 @@ class NicerGui:
         """ reset GUI and slider values """
         for slider in self.sliders:
             slider.set(0)
-        self.gamma_slider.set(0.100)
+        self.gamma_slider.set(config.gamma)
         for variable in self.slider_variables:
             variable.set(0)
         for checkbox in self.checkboxes:

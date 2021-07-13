@@ -39,7 +39,11 @@ candidates_3000 = []
 candidates_3000_length = []
 mean_distances = []
 yaml_names = []
-parameters = []
+optim_lrs = []
+gammas = []
+score_pows = []
+composite_balances = []
+adaptive_score_offsets = []
 
 for subfolder in subfolders:
     print(f"Processing: {subfolder}")
@@ -54,7 +58,8 @@ for subfolder in subfolders:
     optim_lr = f"_{checkpoints[0].split('_')[0]}"
 
     if optim_lr == "_0.02":
-        yaml_name = "handpicked"
+        continue
+        #yaml_name = "handpicked"
     else:
         yaml_name = batch_data.loc[batch_data['optim_lr'] == optim_lr].iloc[0][1]
     print(f"Yaml: {yaml_name}")
@@ -78,9 +83,17 @@ for subfolder in subfolders:
 
         yaml_names.append(yaml_name)
         mean_distances.append(mean_distance)
-        parameters.append(subfolder)
+        parameters = subfolder.split('_')
+        optim_lrs.append(parameters[0])
+        gammas.append(parameters[1])
+        score_pows.append(parameters[2])
+        composite_balances.append(parameters[3])
+        adaptive_score_offsets.append(parameters[4])
 
-        results = {'yaml_name': yaml_names, 'mean_distance_to_orig': mean_distances, 'parameters': parameters}
+        results = {'yaml_name': yaml_names, 'mean_distance_to_orig': mean_distances,
+                   'optim_lr': optim_lrs, 'gamma': gammas, 'score_pow': score_pows,
+                   'composite_balance': composite_balances,
+                   'adaptive_score_offset': adaptive_score_offsets}
         results_df = pd.DataFrame(results)
         results_df.to_csv(in_dir / 'successful' / "mean_distances.csv")
         results_df.sort_values(by='mean_distance_to_orig', ascending=True, inplace=True)
@@ -98,7 +111,10 @@ candidates = {'3000': candidates_3000, 'length': candidates_3000_length}
 candidates_df = pd.DataFrame(candidates)
 candidates_df.to_csv(in_dir / "suggestions.csv")
 
-results = {'yaml_name': yaml_names, 'mean_distance_to_orig': mean_distances, 'parameters': parameters}
+results = {'yaml_name': yaml_names, 'mean_distance_to_orig': mean_distances,
+           'optim_lr': optim_lrs, 'gamma': gammas, 'score_pow': score_pows, 'composite_balance': composite_balances,
+           'adaptive_score_offset': adaptive_score_offsets}
+
 results_df = pd.DataFrame(results)
 results_df.to_csv(in_dir / 'successful' / "mean_distances.csv")
 results_df.sort_values(by='mean_distance_to_orig', ascending=True, inplace=True)

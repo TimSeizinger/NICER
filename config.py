@@ -26,7 +26,7 @@ save_loss_graph = False                             # saves loss graph
 save_score_graph = False                            # saves score graph
 animate_graphs = False                              # saves animated versions of graphs
 
-choose_save_name_and_folder = True                # able to specify image output folder and name
+choose_save_name_and_folder = False                # able to specify image output folder and name
 
 debug_image_pipeline = False
 padding = True
