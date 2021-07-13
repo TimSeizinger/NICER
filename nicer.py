@@ -603,7 +603,7 @@ class NICER(nn.Module):
                     nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine
                 )
 
-                self.append_to_lists(nima_vgg16_scores, nima_mobilenetv2_distr_of_ratings,
+                self.append_to_lists(nima_vgg16_scores, nima_vgg16_distr_of_ratings,
                                      nima_vgg16_losses, nima_vgg16_loss,
                                      nima_mobilenetv2_scores, nima_mobilenetv2_distr_of_ratings,
                                      nima_mobilenetv2_losses, nima_mobilenetv2_loss,
@@ -696,7 +696,7 @@ class NICER(nn.Module):
 
                     loss = self.select_loss(nima_vgg16_loss, nima_mobilenetv2_loss, ia_pre_loss, ia_pre_ratings,
                                             ia_fine_loss)
-                    self.append_to_lists(nima_vgg16_scores, nima_mobilenetv2_distr_of_ratings,
+                    self.append_to_lists(nima_vgg16_scores, nima_vgg16_distr_of_ratings,
                                          nima_vgg16_losses, nima_vgg16_loss,
                                          nima_mobilenetv2_scores, nima_mobilenetv2_distr_of_ratings,
                                          nima_mobilenetv2_losses, nima_mobilenetv2_loss,
@@ -791,7 +791,7 @@ class NICER(nn.Module):
                                             ia_fine_loss)
                     print(loss.item())
 
-                    self.append_to_lists(nima_vgg16_scores, nima_mobilenetv2_distr_of_ratings,
+                    self.append_to_lists(nima_vgg16_scores, nima_vgg16_distr_of_ratings,
                                          nima_vgg16_losses, nima_vgg16_loss,
                                          nima_mobilenetv2_scores, nima_mobilenetv2_distr_of_ratings,
                                          nima_mobilenetv2_losses, nima_mobilenetv2_loss,

@@ -294,3 +294,31 @@ def evaluate_editing_recovery_pexels(nicer, img_path: Path, graph_data_path: Pat
         with open(graph_data_path / f"{filename}_{limit}.html", 'w') as file:
             file.write(html)
         '''
+
+def evaluate_distance_orig_distorted(graph_data_path: Path, filename):
+    results={}
+    results['image_id'] = []
+    results['distance_to_orig'] = []
+    pexels = Pexels_hyperparamsearch()
+    for i in range(0, len(pexels)):
+        item = pexels.__getitem__(i)
+        print('processing ' + str(item['image_id']) + ' in iteration ' + str(i))
+        results['image_id'].append(item['image_id'])
+
+        img_orig = img_as_float(np.array(item['img_orig']))
+
+        img_dist = img_as_float(np.array(item['img_dist']))
+
+        similarity = 1 - ssim(img_orig, img_dist, multichannel=True)
+        results['distance_to_orig'].append(similarity)
+        if i % 100 == 0:
+            print(mean(results['distance_to_orig']))
+
+    if results['image_id']:
+        df = pd.DataFrame.from_dict(results)
+        df.to_csv(graph_data_path / f"{filename}.csv", sep=',', index=True)
+        '''
+        html = df.to_html()
+        with open(graph_data_path / f"{filename}_{limit}.html", 'w') as file:
+            file.write(html)
+        '''
