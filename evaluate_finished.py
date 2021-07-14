@@ -44,7 +44,7 @@ if not os.path.isdir(Path('analysis/results/hyperparametersearch')):
 
 for i in range(10):
     cutoff = float(i) / 10
-    print(f'Evaluating with cutoff of {i}')
+    print(f'Evaluating with cutoff of {cutoff}')
 
     out_dir = Path('analysis/results/hyperparametersearch') / str(cutoff)
 
@@ -66,6 +66,12 @@ for i in range(10):
     score_pows = []
     composite_balances = []
     adaptive_score_offsets = []
+
+    distances_distorted_can = pd.read_csv(Path('analysis/sets/hyperparameter/distances_distorted_can.csv'))
+    col = ['distance_to_orig']
+    distances_distorted_can[col] = distances_distorted_can[distances_distorted_can[col] > cutoff][col]
+    distances_distorted_can.dropna(inplace=True)
+    distances_distorted_can.to_csv(out_dir / 'selected_images.csv')
 
     for subfolder in subfolders:
         print(f"Processing: {subfolder}")
@@ -100,12 +106,6 @@ for i in range(10):
 
             combined_data = pd.concat(checkpoint_data, ignore_index=True)
             combined_data.drop(columns='Unnamed: 0', inplace=True)
-
-            distances_distorted_can = pd.read_csv(Path('analysis/sets/hyperparameter/distances_distorted_can.csv'))
-            col = ['distance_to_orig']
-            distances_distorted_can[col] = distances_distorted_can[distances_distorted_can[col] > cutoff][col]
-            distances_distorted_can.dropna(inplace=True)
-            distances_distorted_can.to_csv(out_dir / 'selected_images.csv')
 
             combined_data = combined_data.filter(items=distances_distorted_can.index.values.tolist(), axis=0)
 
