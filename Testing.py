@@ -1,3 +1,11 @@
+import pandas as pd
+from pathlib import Path
+
+df = pd.read_csv(Path('analysis')/Path('results')/'distances_to_originals.csv')
+print(df['distance_to_orig'].mean())
+print(df['distance_to_orig'].std())
+
+'''
 from PIL import Image
 import numpy as np
 from skimage import img_as_float
@@ -31,3 +39,4 @@ s_fn_alex = lpips.LPIPS(net='alex')
 
 print(f"LPIPS alex based Similarity between original and itself is {1 - loss_fn_alex(original, original).item()}")
 print(f"LPIPS alex based Similarity between original and distorted is {1 - loss_fn_alex(original, distorted).item()}")
+'''

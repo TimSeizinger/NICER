@@ -489,7 +489,8 @@ class NICER(nn.Module):
             self.queue.put(filters_for_queue)
 
     def enhance_image(self, image_path, re_init=True, fixFilters=None, epochs=config.epochs, thread_stopEvent=None,
-                      headless_mode=False, img_orig=None, nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True):
+                      headless_mode=False, img_orig=None, nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True,
+                      can_test = False):
         """
             optimization routine that is called to enhance an image.
             Usually this is called from the NICER button in the GUI.
@@ -615,12 +616,14 @@ class NICER(nn.Module):
 
                 loss = self.select_loss(nima_vgg16_loss, nima_mobilenetv2_loss, ia_pre_loss, ia_pre_ratings,
                                         ia_fine_loss)
-                loss_buffer.append(loss.item())
 
-                loss.backward()
-                self.optimizer.step()
+                if not can_test:
+                    loss_buffer.append(loss.item())
 
-                self.put_filters_in_queue(i, headless_mode)
+                    loss.backward()
+                    self.optimizer.step()
+
+                    self.put_filters_in_queue(i, headless_mode)
 
         elif config.optim == 'cma':  # CMA optimizer
             with torch.no_grad():

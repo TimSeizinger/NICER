@@ -216,7 +216,7 @@ def evaluate_editing_losses_pexels(nicer, output_file, mode, losses: list, limit
 
 
 def evaluate_editing_recovery_pexels(nicer, img_path: Path, graph_data_path: Path, filename, loss: str, limit=None,
-                            nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True):
+                                     nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True):
 
     results = get_results_dict(['orig', 'dist', 'rest'], nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine)
     #results['dist_filters'] = []
@@ -317,6 +317,65 @@ def evaluate_distance_orig_distorted(graph_data_path: Path, filename):
     if results['image_id']:
         df = pd.DataFrame.from_dict(results)
         df.to_csv(graph_data_path / f"{filename}.csv", sep=',', index=True)
+        '''
+        html = df.to_html()
+        with open(graph_data_path / f"{filename}_{limit}.html", 'w') as file:
+            file.write(html)
+        '''
+
+def can_test(nicer, img_path: Path, graph_data_path: Path, filename, limit=None, mode='dist'):
+    results = {}
+    results['image_id'] = []
+    results['distance_to_orig'] = []
+    pexels = Pexels_hyperparamsearch()
+
+    if limit is None:
+        limit = len(pexels)
+
+    processed_fallback = 0
+    processed = os.listdir(graph_data_path)
+    if processed:
+        processed = [item.split('_')[-1] for item in processed]
+        processed = [item.split('.')[0] for item in processed]
+        processed = [int(item) for item in processed]
+        processed_fallback = max(processed) + 1
+
+    for i in range(processed_fallback, limit):
+        item = pexels.__getitem__(i)
+        print('processing ' + str(item['image_id']) + ' in iteration ' + str(i))
+        results['image_id'].append(item['image_id'])
+
+        img_orig = img_as_float(np.array(item['img_orig']))
+
+        # Apply CAN to image
+        can_image, graph_data = nicer.enhance_image(item[f'img_{mode}'], re_init=True, headless_mode=True, can_test=True,
+                                                         nima_vgg16=False, nima_mobilenetv2=False,
+                                                         ssmtpiaa=False, ssmtpiaa_fine=False)
+        img_can = img_as_float(np.array(can_image))
+        can_image = Image.fromarray(can_image)
+
+        similarity = 1 - ssim(img_orig, img_can, multichannel=True)
+        results['distance_to_orig'].append(similarity)
+
+        # Export image with rating history
+        can_image.save(img_path/f"{item['image_id'].split('.')[0]}_rest.{item['image_id'].split('.')[1]}")
+
+        if (i + 1) % 50 == 0:
+            print("saving dataframe")
+            df = pd.DataFrame.from_dict(results)
+            df.to_csv(graph_data_path / f"{filename}_{i}.csv", sep=',', index=True)
+            '''
+            html = df.to_html()
+            with open(graph_data_path / f"{filename}_{i}.html", 'w') as file:
+                file.write(html)
+            '''
+            # reset results dictionary
+            for key in results:
+                results[key] = []
+
+    if results['image_id']:
+        df = pd.DataFrame.from_dict(results)
+        df.to_csv(graph_data_path / f"{filename}_{limit}.csv", sep=',', index=True)
         '''
         html = df.to_html()
         with open(graph_data_path / f"{filename}_{limit}.html", 'w') as file:
