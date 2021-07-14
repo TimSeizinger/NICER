@@ -817,6 +817,19 @@ class NICER(nn.Module):
             # real rescale is done during saving.
             original_tensor_transformed = transforms.ToTensor()(pil_image)
 
+            if original_tensor_transformed.shape[1] > config.final_size or original_tensor_transformed.shape[2] > config.final_size:
+                print("resize")
+                print_msg("Resizing to {}p before saving".format(str(config.final_size)), 3)
+                factor = config.final_size / original_tensor_transformed.shape[2] if (original_tensor_transformed.shape[2] > original_tensor_transformed.shape[1]) else config.final_size / original_tensor_transformed.shape[1]
+
+                width = int(original_tensor_transformed.shape[1] * factor)
+                height = int(original_tensor_transformed.shape[2] * factor)
+
+                original_tensor_transformed = transforms.Resize((width, height))(original_tensor_transformed)
+
+            print(original_tensor_transformed.shape[1])
+            print(original_tensor_transformed.shape[2])
+
             final_filters = torch.zeros((8, original_tensor_transformed.shape[1], original_tensor_transformed.shape[2]),
                                         dtype=torch.float32).to(self.device)
             for k in range(8):

@@ -194,3 +194,36 @@ class Pexels_hyperparamsearch:
         img_dist: Image = Image.open(path_dist).convert("RGB")
 
         return {"image_id": self.files.iloc[idx][0], "img_orig": img_orig, "img_dist": img_dist}
+
+
+class Adobe5k:
+    def __init__(
+        self,
+        mode: str,
+        percentage_of_dataset: int = None,
+    ):
+        self.mode = mode
+        self.image_dir = Path(f'datasets/adobe5k/{mode}')
+        self.percentage_of_dataset = percentage_of_dataset
+        photos = os.listdir(self.image_dir)
+        self.files = pd.DataFrame(data={'image_id': photos})
+
+        logging.info(f"found {len(self.files)} files")
+
+    def __len__(self) -> int:
+        return len(self.files)
+
+    def __getitem__(self, idx):
+        '''
+        try:
+            return self._actualgetitem(idx)
+        except:
+            print("except" + str(idx))
+            return self[random.randint(0, len(self))]
+        '''
+        return self._actualgetitem(idx)
+
+    def _actualgetitem(self, idx: int):
+        path = self.image_dir / str(self.files.iloc[idx][0])
+        pil_img: Image = Image.open(path).convert("RGB")
+        return {"image_id": self.files.iloc[idx][0], "img": pil_img}

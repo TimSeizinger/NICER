@@ -32,18 +32,18 @@ debug_image_pipeline = False
 padding = True
 
 
-gamma = 0.21083748556587226
+gamma = 0.053445881011986975
 epochs = 50
 optim = 'sgd'                                      # also supports sgd, adam, cma and nevergrad(meta)
-optim_lr = 0.08226858405399581
+optim_lr = 0.012797039203293
 optim_momentum = 0.9
 cma_sigma = 5
 cma_population = 15
 hinge_val = 0.15                                    # value for hinge loss
-composite_pow = 0.688965571281154                 # Score influence on balance between MSE_SCORE_REG and MSE_STYLE_CHANGES_HINGE_REG
-composite_balance = -0.8283521950876556             # Balance between MSE_SCORE_REG COMPOSITE and MSE_STYLE_CHANGES_HINGE_REG [-1,0, 1.0]
+composite_pow = 0.8557224253386464                # Score influence on balance between MSE_SCORE_REG and MSE_STYLE_CHANGES_HINGE_REG
+composite_balance = -0.7633380079031169            # Balance between MSE_SCORE_REG COMPOSITE and MSE_STYLE_CHANGES_HINGE_REG [-1,0, 1.0]
 
-adaptive_score_offset = 0.16905443140904314
+adaptive_score_offset = 0.12582415504241362
 
 # ----- image parameters:
 
