@@ -38,17 +38,17 @@
                       name: dshm
                   command:
                     - python
-                    - hyperparamtest.py
+                    - hyperparamtest_new.py
                     - --optim_lr
-                    - '0.22220738873160734'
+                    - '0.10110495168769851'
                     - --gamma
-                    - '0'
+                    - '0.3'
                     - --alpha
-                    - '0.0'
+                    - '0.4'
                     - --margin
-                    - '0.25'
+                    - '0.1'
                     - --adaptive_score_offset
-                    - '0.6915696546074654'
+                    - '0.42478086225816103'
               imagePullSecrets:
                 - name: lsx-registry
               nodeSelector:

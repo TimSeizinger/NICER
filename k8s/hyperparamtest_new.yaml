@@ -38,7 +38,7 @@
                       name: dshm
                   command:
                     - python
-                    - hyperparamtest.py
+                    - hyperparamtest_new.py
                     - --optim_lr
                     - '0.025'
                     - --gamma

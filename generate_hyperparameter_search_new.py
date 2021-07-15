@@ -6,7 +6,7 @@ out = Path("k8s/hyperparametersearch_new")
 if not os.path.isdir(out):
     os.mkdir(out)
 
-for i in range(20, 25):
+for i in range(0, 10):
     folder = f"batch_{i}"
     if not os.path.isdir(out / folder):
         os.mkdir(out / folder)
@@ -30,7 +30,7 @@ for i in range(20, 25):
               restartPolicy: "OnFailure"
               containers:
                 - name: hyperparam-test
-                  image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.4
+                  image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.3
                   workingDir: /workdir
                   imagePullPolicy: "Always"
                   env:
@@ -58,7 +58,7 @@ for i in range(20, 25):
                       name: dshm
                   command:
                     - python
-                    - hyperparamtest.py
+                    - hyperparamtest_new.py
                     - --optim_lr
                     - '{optim_lr}'
                     - --gamma
@@ -71,8 +71,6 @@ for i in range(20, 25):
                     - '{adaptive_score_offset}'
               imagePullSecrets:
                 - name: lsx-registry
-              nodeSelector:
-                gputype: a100
               volumes:
                 - name: dataset-orig
                   cephfs:
