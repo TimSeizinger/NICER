@@ -11,7 +11,7 @@ mean_distances.drop(columns=['Unnamed: 0'], inplace=True)
 print(mean_distances)
 
 sns.set_theme()
-hyperparameter_plots = False
+hyperparameter_plots = True
 
 if hyperparameter_plots:
     sns.relplot(

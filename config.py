@@ -13,7 +13,7 @@ valid_SSMTPIAA_losses = ['MSE_SCORE_REG', 'MSE_SCORE_VISUAL_REG', 'ADAPTIVE_MSE_
                          'BCE_SCORE', 'BCE_SCORE_REG',
                          'MSE_STYLE_CHANGES', 'MSE_STYLE_CHANGES_REG',
                          'MSE_STYLE_CHANGES_HINGE', 'MSE_STYLE_CHANGES_HINGE_REG',
-                         'COMPOSITE']
+                         'COMPOSITE', 'COMPOSITE_NEW']
 SSMTPIAA_loss = 'COMPOSITE'                      # Which ia_pre losses should be used by default
 
 automatic_epoch = False                             # Automatically stop enhancing image if loss remains unchanged
@@ -39,15 +39,20 @@ optim_lr = 0.012797039203293
 optim_momentum = 0.9
 cma_sigma = 5
 cma_population = 15
-hinge_val = 0.15                                    # value for hinge loss
+hinge_val = 0.15  # value for hinge loss margin
+
+# COMPOSITE loss parameters
 composite_pow = 0.8557224253386464                # Score influence on balance between MSE_SCORE_REG and MSE_STYLE_CHANGES_HINGE_REG
 composite_balance = -0.7633380079031169            # Balance between MSE_SCORE_REG COMPOSITE and MSE_STYLE_CHANGES_HINGE_REG [-1,0, 1.0]
+
+# COMPOSITE_NEW loss
+composite_new_balance=0.5  #balance between ADAPTIVE_MSE_SCORE_REG and MSE_STYLE_CHANGES_HINGE
 
 adaptive_score_offset = 0.12582415504241362
 
 # ----- image parameters:
 
-rescale = True
+rescale = False
 final_size = 1920                                   # final size when saving. Attention: bigger imgs require more memory
 supported_extensions = ['jpg', 'jpeg', 'png']
 supported_extensions_raw = ['dng']                  # legacy, deprecated

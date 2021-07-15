@@ -295,6 +295,106 @@ def evaluate_editing_recovery_pexels(nicer, img_path: Path, graph_data_path: Pat
             file.write(html)
         '''
 
+def evaluate_editing_recovery_pexels_new(nicer, img_path: Path, graph_data_path: Path, filename, loss: str, limit=None,
+                                         nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True):
+
+    results = get_results_dict(['orig', 'dist', 'rest', 'best_rest'], nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine)
+    #results['dist_filters'] = []
+    results['distance_to_orig'] = []
+    results['best_distance_to_orig'] = []
+    results['best_epoch'] = []
+    results['best_epoch_loss'] = []
+    results['best_epoch_filters'] = []
+
+    pexels = Pexels_hyperparamsearch()
+
+    if limit is None:
+        limit = len(pexels)
+
+    processed_fallback = 0
+    processed = os.listdir(graph_data_path)
+    if processed:
+        processed = [item.split('_')[-1] for item in processed]
+        processed = [item.split('.')[0] for item in processed]
+        processed = [int(item) for item in processed]
+        processed_fallback = max(processed) + 1
+
+    for i in range(processed_fallback, limit):
+        item = pexels.__getitem__(i)
+        print('processing ' + str(item['image_id']) + ' in iteration ' + str(i))
+        results['image_id'].append(item['image_id'])
+
+        # Set loss
+        nicer.config.SSMTPIAA_loss = loss
+
+
+        # Evaluate unedited image and save scores to dictionary
+        evaluate_image(item['img_orig'], nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='orig')
+
+        img_orig = img_as_float(np.array(item['img_orig']))
+
+        # Evaluate distorted image and save scores to dictionary
+        evaluate_image(item['img_dist'], nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='dist')
+
+        print(f"editing {item['image_id']} using {loss} in iteration {i}")
+
+        # Edit image
+        restored_image, best_epoch_data, graph_data = \
+            nicer.enhance_image(item['img_dist'], re_init=True, headless_mode=True, early_stop_test=True,
+                                                         nima_vgg16=nima_vgg16, nima_mobilenetv2=nima_mobilenetv2,
+                                                         ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
+        img_rest = img_as_float(np.array(restored_image))
+        restored_image = Image.fromarray(restored_image)
+
+        # Evaluate final edited image and save scores
+        evaluate_image(restored_image, nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='rest')
+
+        similarity = 1 - ssim(img_orig, img_rest, multichannel=True)
+        results['distance_to_orig'].append(similarity)
+
+        # Same for the best restored_image
+        best_img_rest = img_as_float(np.array(best_epoch_data['img']))
+        best_restored_image = Image.fromarray((best_epoch_data['img']))
+
+        evaluate_image(best_restored_image, nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine,
+                       prefix='best_rest')
+
+        similarity = 1 - ssim(img_orig, best_img_rest, multichannel=True)
+        results['best_distance_to_orig'].append(similarity)
+
+        results['best_epoch'].append(best_epoch_data['best_epoch'])
+        results['best_epoch_loss'].append(best_epoch_data['best_epoch_loss'])
+        results['best_epoch_filters'].append(best_epoch_data['best_epoch_filters'])
+
+        # Export images with rating history and best_epoch_data
+        restored_image.save(img_path/f"{item['image_id'].split('.')[0]}_rest.{item['image_id'].split('.')[1]}")
+        best_restored_image.save(img_path/f"{item['image_id'].split('.')[0]}_bestrestin{best_epoch_data['best_epoch']}.{item['image_id'].split('.')[1]}")
+
+        with open(img_path/f"{item['image_id'].split('.')[0]}_rest.json", "w") as outfile:
+            json.dump(graph_data, outfile)
+
+        if (i + 1) % 50 == 0:
+            print("saving dataframe")
+            df = pd.DataFrame.from_dict(results)
+            df.to_csv(graph_data_path / f"{filename}_{i}.csv", sep=',', index=True)
+            '''
+            html = df.to_html()
+            with open(graph_data_path / f"{filename}_{i}.html", 'w') as file:
+                file.write(html)
+            '''
+            # reset results dictionary
+            for key in results:
+                results[key] = []
+
+    if results['image_id']:
+        df = pd.DataFrame.from_dict(results)
+        df.to_csv(graph_data_path / f"{filename}_{limit}.csv", sep=',', index=True)
+        '''
+        html = df.to_html()
+        with open(graph_data_path / f"{filename}_{limit}.html", 'w') as file:
+            file.write(html)
+        '''
+
 def evaluate_distance_orig_distorted(graph_data_path: Path, filename):
     results={}
     results['image_id'] = []

@@ -414,6 +414,26 @@ class NICER(nn.Module):
                 else:
                     return composite_loss * (1 - abs(config.composite_balance)) + \
                            styles_loss * config.composite_balance
+            elif config.SSMTPIAA_loss == 'COMPOSITE_NEW':
+                if re_init:
+                    score_loss = \
+                        loss_with_filter_regularization(ia_pre_ratings['score'],
+                                                        torch.FloatTensor([[max(score_target, ia_pre_ratings[
+                                                            'score'].item())]]).to(self.device),
+                                                        self.loss_func_mse.cpu(),
+                                                        self.filters.cpu(), gamma=self.gamma)
+                else:
+                    score_loss = loss_with_filter_regularization(ia_pre_ratings['score'],
+                                                                 torch.FloatTensor([[max(score_target, ia_pre_ratings[
+                                                                     'score'].item())]]).to(self.device),
+                                                                 self.loss_func_mse.cpu(), self.filters.cpu(),
+                                                                 initial_filters=user_preset_filters,
+                                                                 gamma=self.gamma)
+
+                ratings = hinge(ia_pre_ratings['styles_change_strength'], config.hinge_val)
+                styles_loss = self.loss_func_mse(ratings, torch.zeros(1, 9).to(self.device))
+
+                return score_loss * config.composite_new_balance + styles_loss * (1 - config.composite_new_balance)
             else:
                 raise Exception('Illegal SSMTPIAA_loss')
         else:
@@ -490,7 +510,7 @@ class NICER(nn.Module):
 
     def enhance_image(self, image_path, re_init=True, fixFilters=None, epochs=config.epochs, thread_stopEvent=None,
                       headless_mode=False, img_orig=None, nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True,
-                      can_test = False):
+                      can_test = False, early_stop_test=False):
         """
             optimization routine that is called to enhance an image.
             Usually this is called from the NICER button in the GUI.
@@ -564,6 +584,10 @@ class NICER(nn.Module):
         else:
             img = None
 
+        best_epoch = 0
+        best_epoch_loss = 999.0
+        best_epoch_filters = None
+
         if config.optim == 'sgd' or config.optim == 'adam':
             for i in range(epochs):
                 if headless_mode is False and thread_stopEvent.is_set():
@@ -616,6 +640,11 @@ class NICER(nn.Module):
 
                 loss = self.select_loss(nima_vgg16_loss, nima_mobilenetv2_loss, ia_pre_loss, ia_pre_ratings,
                                         ia_fine_loss)
+
+                if loss.item() < best_epoch_loss:
+                    best_epoch = i
+                    best_epoch_loss = loss.item()
+                    best_epoch_filters = self.filters.clone().detach()
 
                 if not can_test:
                     loss_buffer.append(loss.item())
@@ -817,7 +846,7 @@ class NICER(nn.Module):
             # real rescale is done during saving.
             original_tensor_transformed = transforms.ToTensor()(pil_image)
 
-            if original_tensor_transformed.shape[1] > config.final_size or original_tensor_transformed.shape[2] > config.final_size:
+            if config.rescale and (original_tensor_transformed.shape[1] > config.final_size or original_tensor_transformed.shape[2] > config.final_size):
                 print("resize")
                 print_msg("Resizing to {}p before saving".format(str(config.final_size)), 3)
                 factor = config.final_size / original_tensor_transformed.shape[2] if (original_tensor_transformed.shape[2] > original_tensor_transformed.shape[1]) else config.final_size / original_tensor_transformed.shape[1]
@@ -827,8 +856,8 @@ class NICER(nn.Module):
 
                 original_tensor_transformed = transforms.Resize((width, height))(original_tensor_transformed)
 
-            print(original_tensor_transformed.shape[1])
-            print(original_tensor_transformed.shape[2])
+                print(original_tensor_transformed.shape[1])
+                print(original_tensor_transformed.shape[2])
 
             final_filters = torch.zeros((8, original_tensor_transformed.shape[1], original_tensor_transformed.shape[2]),
                                         dtype=torch.float32).to(self.device)
@@ -855,6 +884,30 @@ class NICER(nn.Module):
             enhanced_clipped = np.clip(enhanced_img, 0.0, 1.0) * 255.0
             enhanced_clipped = enhanced_clipped.astype('uint8')
 
+            if early_stop_test:
+                best_filters = torch.zeros(
+                    (8, original_tensor_transformed.shape[1], original_tensor_transformed.shape[2]),
+                    dtype=torch.float32).to(self.device)
+                for k in range(8):
+                    if fixFilters:
+                        if fixFilters[k] == 1:
+                            best_filters[k, :, :] = initial_filter_values[k][1]
+                        else:
+                            best_filters[k, :, :] = best_epoch_filters.view(-1)[k]
+                    else:
+                        best_filters[k, :, :] = best_epoch_filters.view(-1)[k]
+
+                best_mapped_img = torch.cat((original_tensor_transformed, best_filters.cpu()), dim=0).unsqueeze(dim=0).to(
+                    self.device)
+                best_enhanced_img = self.can(best_mapped_img)
+                best_enhanced_img = best_enhanced_img.cpu()
+                best_enhanced_img = best_enhanced_img.detach().permute(2, 3, 1, 0).squeeze().numpy()
+                best_enhanced_clipped = np.clip(best_enhanced_img, 0.0, 1.0) * 255.0
+                best_enhanced_clipped = best_enhanced_clipped.astype('uint8')
+
+                best_epoch_dict = {'img': best_enhanced_clipped, 'best_epoch': best_epoch, 'best_epoch_loss': best_epoch_loss,
+                                   'best_epoch_filters': best_epoch_filters.tolist()}
+
             graph_data = {}
             if nima_vgg16:
                 graph_data['nima_vgg16_scores'] = nima_vgg16_scores
@@ -880,8 +933,10 @@ class NICER(nn.Module):
             # returns an 8bit image in any case ---
             if not headless_mode:
                 return enhanced_clipped, None, None
-            else:
+            elif not early_stop_test:
                 return enhanced_clipped, graph_data
+            elif early_stop_test:
+                return enhanced_clipped, best_epoch_dict, graph_data
 
     def update_optimizer(self, optim_lr):
         if config.optim == 'sgd':

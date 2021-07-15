@@ -1,0 +1,93 @@
+
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: hypersearch-17-11
+        spec:
+          template:
+            spec:
+              priorityClassName: research-low
+              restartPolicy: "OnFailure"
+              containers:
+                - name: hyperparam-test
+                  image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.3
+                  workingDir: /workdir
+                  imagePullPolicy: "Always"
+                  env:
+                    - name: HOME
+                      value: "/tmp"
+                  resources:
+                    limits:
+                      nvidia.com/gpu: "1"
+                      cpu: "48"
+                      memory: "10Gi"
+                    requests:
+                      nvidia.com/gpu: "1"
+                      cpu: "16"
+                      memory: "10Gi"
+                  volumeMounts:
+                    - mountPath: /workdir
+                      name: localdir
+                    - mountPath: /dataset-orig
+                      name: dataset-orig
+                    - mountPath: /dataset-dist
+                      name: dataset-dist
+                    - mountPath: /out
+                      name: out
+                    - mountPath: /dev/shm
+                      name: dshm
+                  command:
+                    - python
+                    - hyperparamtest.py
+                    - --optim_lr
+                    - '0.07939678921853954'
+                    - --gamma
+                    - '0.2'
+                    - --alpha
+                    - '0.0'
+                    - --margin
+                    - '0.2'
+                    - --adaptive_score_offset
+                    - '0.38068115928468926'
+              imagePullSecrets:
+                - name: lsx-registry
+              nodeSelector:
+                gputype: rtx2080ti
+              volumes:
+                - name: dataset-orig
+                  cephfs:
+                    monitors:
+                      - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
+                    user: studseizinger
+                    path: "/home/stud/seizinger/git/NICER/datasets/pexels/images"
+                    secretRef:
+                      name: ceph-secret
+                - name: dataset-dist
+                  cephfs:
+                    monitors:
+                      - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
+                    user: studseizinger
+                    path: "/home/stud/seizinger/git/NICER/datasets/pexels_dist/images"
+                    secretRef:
+                      name: ceph-secret
+                - name: out
+                  cephfs:
+                    monitors:
+                      - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
+                    user: studseizinger
+                    path: "/home/stud/seizinger/git/NICER/out"
+                    secretRef:
+                      name: ceph-secret
+                - name: localdir
+                  cephfs:
+                    monitors:
+                      - 132.187.14.16,132.187.14.17,132.187.14.19,132.187.14.20
+                    user: studseizinger
+                    path: "/home/stud/seizinger/git/NICER/"
+                    secretRef:
+                      name: ceph-secret
+                - name: dshm
+                  emptyDir:
+                    medium: Memory
+        
+        
