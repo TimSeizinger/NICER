@@ -5,7 +5,7 @@ import pandas as pd
 from pathlib import Path
 
 
-mean_distances = pd.read_csv(Path('sets') / Path('mean_distances.csv'))
+mean_distances = pd.read_csv(Path('sets') / Path('mean_distances_new.csv'))
 mean_distances.drop(columns=['Unnamed: 0'], inplace=True)
 
 print(mean_distances)

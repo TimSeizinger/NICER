@@ -8,7 +8,7 @@ from pathlib import Path
 in_dir = Path("out")
 
 if not "batch_data.csv" in os.listdir(in_dir):
-    yaml_dir = Path("k8s") / Path("hyperparametersearch")
+    yaml_dir = Path("k8s") / Path("hyperparametersearch_new")
     batches = os.listdir(yaml_dir)
     parameters = {'name': [], 'optim_lr': []}
     for batch in batches:
@@ -20,6 +20,7 @@ if not "batch_data.csv" in os.listdir(in_dir):
                 try:
                     yaml_data = yaml.safe_load(stream)
                     optim_lr = f"_{yaml_data['spec']['template']['spec']['containers'][0]['command'][3]}"
+                    print(optim_lr)
                     parameters['optim_lr'].append(optim_lr)
                 except yaml.YAMLError as exc:
                     print(exc)
@@ -39,14 +40,14 @@ export_combined_data = True
 if not os.path.isdir(Path('analysis/results')):
     os.mkdir(Path('analysis/results'))
 
-if not os.path.isdir(Path('analysis/results/hyperparametersearch')):
-    os.mkdir(Path('analysis/results/hyperparametersearch'))
+if not os.path.isdir(Path('analysis/results/hyperparametersearch_new')):
+    os.mkdir(Path('analysis/results/hyperparametersearch_new'))
 
 for i in range(10):
     cutoff = float(i) / 10
     print(f'Evaluating with cutoff of {cutoff}')
 
-    out_dir = Path('analysis/results/hyperparametersearch') / str(cutoff)
+    out_dir = Path('analysis/results/hyperparametersearch_new') / str(cutoff)
 
     if not os.path.isdir(out_dir):
         os.mkdir(out_dir)
@@ -85,7 +86,7 @@ for i in range(10):
 
         optim_lr = f"_{checkpoints[0].split('_')[0]}"
 
-        if optim_lr == "_0.02":
+        if optim_lr == "_0.025":
             yaml_name = "handpicked"
         elif subfolder == 'can_test_orig' or subfolder == 'can_test_dist' or subfolder == 'nicer':
             yaml_name = subfolder
@@ -114,6 +115,10 @@ for i in range(10):
 
             mean_distance = combined_data['distance_to_orig'].mean()
             std_deviation = combined_data['distance_to_orig'].std()
+
+            if 'best_distance_to_orig' in combined_data.keys():
+                mean_distance = combined_data['best_distance_to_orig'].mean()
+                std_deviation = combined_data['best_distance_to_orig'].std()
 
             print(f"mean distances_to_orig of {yaml_name} is {mean_distance} with standard deviation: {std_deviation}")
 
