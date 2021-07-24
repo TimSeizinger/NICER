@@ -49,7 +49,7 @@ class NICER(nn.Module):
         self.finetuned = "fine" in config.IA_fine_checkpoint_path  # TODO Remove this line
 
         nima_mobilenetv2 = NIMA("scores-one, change_regress")
-        nima_mobilenetv2.load_state_dict(torch.load(config.nima_mobilenet_checkpoint_path)['model_state'])
+        nima_mobilenetv2.load_state_dict(torch.load(config.nima_mobilenet_checkpoint_path, map_location=self.device)['model_state'])
         nima_mobilenetv2.eval()
         nima_mobilenetv2.to(self.device)
 
@@ -59,12 +59,12 @@ class NICER(nn.Module):
         nima_vgg16.to(self.device)
 
         ia_pre = IA("scores-one, change_regress", True, False, mapping, None, pretrained=False)
-        ia_pre.load_state_dict(torch.load(config.IA_pre_checkpoint_path))
+        ia_pre.load_state_dict(torch.load(config.IA_pre_checkpoint_path, map_location=self.device))
         ia_pre.eval()
         ia_pre.to(self.device)
 
         ia_fine = NIMA("scores-one, change_regress")
-        ia_fine.load_state_dict(torch.load(config.IA_fine_checkpoint_path)['model_state'])
+        ia_fine.load_state_dict(torch.load(config.IA_fine_checkpoint_path, map_location=self.device)['model_state'])
         ia_fine.eval()
         ia_fine.to(self.device)
 
