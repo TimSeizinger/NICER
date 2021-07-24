@@ -26,11 +26,16 @@ from skimage.metrics import structural_similarity as ssim
 
 class NICER(nn.Module):
 
-    def __init__(self, checkpoint_can, checkpoint_nima, device='cpu', can_arch=8):
+    def __init__(self, checkpoint_can, checkpoint_nima, device=None, can_arch=8):
         self.config: config = config
 
         super(NICER, self).__init__()
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        if device is None:
+            self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        else:
+            self.device = device
+
         print("Using", self.device)
 
         if can_arch != 8 and can_arch != 7:

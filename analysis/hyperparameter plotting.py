@@ -13,6 +13,9 @@ print(mean_distances)
 sns.set_theme()
 hyperparameter_plots = True
 
+deep_pal = sns.color_palette('deep')
+cmap = sns.blend_palette([deep_pal[2], deep_pal[1]], as_cmap=True)
+
 if hyperparameter_plots:
     sns.relplot(
         data=mean_distances,
@@ -46,10 +49,11 @@ if hyperparameter_plots:
     plt.show()
     '''
 
+    sns.pairplot(
+        data=mean_distances,
+    )
 
-
-    deep_pal = sns.color_palette('deep')
-    cmap = sns.blend_palette([deep_pal[2], deep_pal[1]], as_cmap=True)
+    plt.show()
 
     sns.pairplot(
         data=mean_distances,
@@ -69,14 +73,14 @@ if hyperparameter_plots:
 
     plt.show()
 
-    g = sns.histplot(
+    g = sns.scatterplot(
         data=mean_distances,
-        x='composite_balance', y='adaptive_score_offset',
+        x='gamma', y='margin',
         hue='mean_distance_to_orig',
-        palette=cmap,
+        palette=cmap, alpha=0.2
     )
 
-    plt.legend([],[], frameon=False)
+    plt.legend([], [], frameon=False)
 
     plt.show()
 

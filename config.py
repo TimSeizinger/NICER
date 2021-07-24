@@ -35,10 +35,13 @@ padding = True
 gamma = 0.053445881011986975
 epochs = 50
 optim = 'sgd'                                      # also supports sgd, adam, cma and nevergrad(meta)
+
 optim_lr = 0.012797039203293
 optim_momentum = 0.9
+
 cma_sigma = 5
-cma_population = 15
+cma_population = 10
+
 hinge_val = 0.15  # value for hinge loss margin
 
 # COMPOSITE loss parameters
