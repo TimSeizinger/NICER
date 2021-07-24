@@ -112,7 +112,6 @@ class NICER(nn.Module):
 
     def forward(self, image: torch.Tensor, image_jan: torch.Tensor, fixedFilters=None, new=False, headless_mode=False,
                 nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True):
-        torch.cuda.synchronize()
 
         filter_tensor = torch.zeros((8, 224, 224), dtype=torch.float32).to(self.device)
 
