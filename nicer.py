@@ -680,7 +680,7 @@ class NICER(nn.Module):
                         if max(loss_buffer.data) - min(loss_buffer.data) < 0.035:
                             break
 
-                    print_msg("Iteration {} of {}".format(i, epochs), 2)
+                    #print_msg("Iteration {} of {}".format(i, epochs), 2)
 
                     candidates = self.optimizer.ask()
 

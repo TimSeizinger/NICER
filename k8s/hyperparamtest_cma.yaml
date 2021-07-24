@@ -36,7 +36,7 @@
                       name: dshm
                   command:
                     - python
-                    - hyperparamtest_cma_cpu.py
+                    - hyperparamtest_cma.py
                     - --sigma
                     - '5'
                     - --gamma

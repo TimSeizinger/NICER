@@ -1,28 +1,8 @@
-import random
-import os
-from pathlib import Path
 
-out = Path("k8s/hyperparametersearch_cma")
-if not os.path.isdir(out):
-    os.mkdir(out)
-
-for i in range(30, 32):
-    folder = f"batch_{i}"
-    if not os.path.isdir(out / folder):
-        os.mkdir(out / folder)
-
-    for j in range(50):
-        alpha: float = random.choice([0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0])
-        margin: float = random.choice([0.0,0.05,0.1,0.15,0.2,0.25])
-        sigma: float = random.uniform(0.1, 25)
-        gamma: float = random.choice([0,0.1,0.2,0.3])
-        adaptive_score_offset: float = random.uniform(0.1, 1)
-
-        yaml = f'''
         apiVersion: batch/v1
         kind: Job
         metadata:
-          name: hypersearch-{i}-{j}
+          name: hypersearch-20-0
         spec:
           template:
             spec:
@@ -30,7 +10,7 @@ for i in range(30, 32):
               restartPolicy: "OnFailure"
               containers:
                 - name: hyperparam-test
-                  image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.4
+                  image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.3
                   workingDir: /workdir
                   imagePullPolicy: "Always"
                   env:
@@ -60,19 +40,19 @@ for i in range(30, 32):
                     - python
                     - hyperparamtest_cma.py
                     - --sigma
-                    - '{sigma}'
+                    - '3.873677443023303'
                     - --gamma
-                    - '{gamma}'
+                    - '0.1'
                     - --alpha
-                    - '{alpha}'
+                    - '0.2'
                     - --margin
-                    - '{margin}'
+                    - '0.2'
                     - --adaptive_score_offset
-                    - '{adaptive_score_offset}'
+                    - '0.5003016848148496'
               imagePullSecrets:
                 - name: lsx-registry
               nodeSelector:
-                gputype: a100
+                gputype: rtx2080ti
               volumes:
                 - name: dataset-orig
                   cephfs:
@@ -110,7 +90,4 @@ for i in range(30, 32):
                   emptyDir:
                     medium: Memory
         
-        '''
-
-        with open(out/folder/f"hypersearch-{i}-{j}.yaml", "w") as yamlfile:
-            yamlfile.write(yaml)
+        
