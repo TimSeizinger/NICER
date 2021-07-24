@@ -6,7 +6,7 @@ out = Path("k8s/hyperparametersearch_cma")
 if not os.path.isdir(out):
     os.mkdir(out)
 
-for i in range(30, 32):
+for i in range(10, 12):
     folder = f"batch_{i}"
     if not os.path.isdir(out / folder):
         os.mkdir(out / folder)
@@ -22,7 +22,7 @@ for i in range(30, 32):
         apiVersion: batch/v1
         kind: Job
         metadata:
-          name: hypersearch-{i}-{j}
+          name: hypersearch-cma-{i}-{j}
         spec:
           template:
             spec:
@@ -30,7 +30,7 @@ for i in range(30, 32):
               restartPolicy: "OnFailure"
               containers:
                 - name: hyperparam-test
-                  image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.4
+                  image: ls6-stud-registry.informatik.uni-wuerzburg.de/studseizinger/nicer_env:0.0.3
                   workingDir: /workdir
                   imagePullPolicy: "Always"
                   env:
@@ -71,8 +71,6 @@ for i in range(30, 32):
                     - '{adaptive_score_offset}'
               imagePullSecrets:
                 - name: lsx-registry
-              nodeSelector:
-                gputype: a100
               volumes:
                 - name: dataset-orig
                   cephfs:

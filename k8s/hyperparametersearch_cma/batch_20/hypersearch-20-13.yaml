@@ -2,7 +2,7 @@
         apiVersion: batch/v1
         kind: Job
         metadata:
-          name: hypersearch-20-13
+          name: hypersearch-cma-20-13
         spec:
           template:
             spec:
@@ -40,19 +40,19 @@
                     - python
                     - hyperparamtest_cma.py
                     - --sigma
-                    - '14.310120229786529'
+                    - '15.173704007150661'
                     - --gamma
-                    - '0.2'
+                    - '0.3'
                     - --alpha
-                    - '0.8'
+                    - '0.6'
                     - --margin
-                    - '0.05'
+                    - '0.25'
                     - --adaptive_score_offset
-                    - '0.3148504540737142'
+                    - '0.7969647831276779'
               imagePullSecrets:
                 - name: lsx-registry
               nodeSelector:
-                gputype: rtx2080ti
+                gputype: 2080ti
               volumes:
                 - name: dataset-orig
                   cephfs:

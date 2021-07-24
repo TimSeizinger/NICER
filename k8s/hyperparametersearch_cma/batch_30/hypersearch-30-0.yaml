@@ -2,7 +2,7 @@
         apiVersion: batch/v1
         kind: Job
         metadata:
-          name: hypersearch-30-0
+          name: hypersearch-cma-30-0
         spec:
           template:
             spec:
@@ -40,15 +40,15 @@
                     - python
                     - hyperparamtest_cma.py
                     - --sigma
-                    - '15.99848821822956'
+                    - '5.628205141050154'
                     - --gamma
-                    - '0'
+                    - '0.2'
                     - --alpha
-                    - '0.0'
+                    - '0.3'
                     - --margin
                     - '0.1'
                     - --adaptive_score_offset
-                    - '0.9499805291979949'
+                    - '0.16780696493013625'
               imagePullSecrets:
                 - name: lsx-registry
               nodeSelector:
