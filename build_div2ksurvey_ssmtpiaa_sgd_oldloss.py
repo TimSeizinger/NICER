@@ -3,7 +3,7 @@ import os
 import torch
 import time
 
-from analysis_utils import edit_survey
+from analysis_utils import edit_div2ksurvey
 from nicer import NICER
 
 start_time = time.time()
@@ -29,7 +29,10 @@ nicer.config.composite_pow = 0.8557224253386464
 nicer.config.composite_balance = -0.7633380079031169  # Alpha
 nicer.config.adaptive_score_offset = 0.12582415504241362
 
-edit_survey(nicer, output_file, nima_vgg16=False, nima_mobilenetv2=False, ssmtpiaa=True, ssmtpiaa_fine=False)
+nicer.config.rescale = True
+nicer.config.final_size = 1000
+
+edit_div2ksurvey(nicer, output_file, nima_vgg16=False, nima_mobilenetv2=False, ssmtpiaa=True, ssmtpiaa_fine=False)
 
 elapsed_time = time.time() - start_time
 elapsed_time = time.strftime("%H:%M:%S", time.gmtime(elapsed_time))
