@@ -630,4 +630,4 @@ def edit_survey(nicer, output_file, limit=None, nima_vgg16=True, nima_mobilenetv
         edited_image = Image.fromarray(edited_image)
 
         # Export
-        edited_image.save(Path('datasets/survey') / output_file / f"{item['image_id'].split('.')[0]}.jpg")
+        edited_image.save(Path('datasets/survey') / output_file / f"{item['image_id'].split('_')[0]}_{output_file}.jpg")
