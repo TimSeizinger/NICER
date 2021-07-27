@@ -47,7 +47,7 @@ for i in range(10):
     cutoff = float(i) / 10
     print(f'Evaluating with cutoff of {cutoff}')
 
-    out_dir = Path('analysis/results/hyperparametersearch_new') / str(cutoff)
+    out_dir = Path('analysis/results/hyperparametersearch_cma') / str(cutoff)
 
     if not os.path.isdir(out_dir):
         os.mkdir(out_dir)
