@@ -4,7 +4,7 @@ verbosity = 2                                      # set from 0 (silent) to 3 (m
 preview = True                                     # toggle to true to show preview imgs -> slower
 interactive_preview_sliders = True                 # toggle to activate interactive sliders for preview when not training -> slower
 interactive_training_sliders = True                # toggle to activate interactive sliders during training -> slower
-use_auto_brightness_normalizer = False             # toggle to activate ABN
+use_auto_brightness_normalizer = True             # toggle to activate ABN
 
 valid_assesors = ['NIMA_VGG16', 'NIMA_mobilenetv2', 'SSMTPIAA', 'SSMTPIAA_fine']
 assessor = 'SSMTPIAA'                            # Which assessor network should be used by default
@@ -32,11 +32,11 @@ debug_image_pipeline = False
 padding = True
 
 
-gamma = 0.053445881011986975
+gamma = 0.1
 epochs = 50
 optim = 'sgd'                                      # also supports sgd, adam, cma and nevergrad(meta)
 
-optim_lr = 0.012797039203293
+optim_lr = 0.05
 optim_momentum = 0.9
 
 cma_sigma = 5

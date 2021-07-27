@@ -7,7 +7,7 @@ import numpy as np
 from skimage.metrics import structural_similarity as ssim
 from skimage import img_as_float
 
-from dataset import Pexels, Pexels_hyperparamsearch, Adobe5k
+from dataset import Pexels, Pexels_hyperparamsearch, Adobe5k, Survey
 from utils import nima_transform, jans_transform, weighted_mean
 from statistics import mean
 from autobright import normalize_brightness
@@ -611,3 +611,23 @@ def evaluate_editing_adobe5k(nicer, output_file, mode, losses: list = ['COMPOSIT
     if results['image_id']:
         write_dict_to_file(results, output_file + str(limit),
                            path="./analysis/results/" + output_file + '_graph_data' + "/")
+
+def edit_survey(nicer, output_file, limit=None, nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True):
+
+    survey_set = Survey(mode='original')
+
+    if limit is None:
+        limit = len(survey_set)
+
+    for i in range(limit):
+        item = survey_set.__getitem__(i)
+        print(f"processing {item['image_id']} in iteration {i}")
+
+        # Edit image
+        edited_image, graph_data = nicer.enhance_image(item['img'], re_init=True, headless_mode=True,
+                                                       nima_vgg16=nima_vgg16, nima_mobilenetv2=nima_mobilenetv2,
+                                                       ssmtpiaa=ssmtpiaa, ssmtpiaa_fine=ssmtpiaa_fine)
+        edited_image = Image.fromarray(edited_image)
+
+        # Export
+        edited_image.save(Path('datasets/survey') / output_file / f"{item['image_id'].split('.')[0]}.jpg")
