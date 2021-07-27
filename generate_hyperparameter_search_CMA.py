@@ -6,7 +6,7 @@ out = Path("k8s/hyperparametersearch_cma")
 if not os.path.isdir(out):
     os.mkdir(out)
 
-for i in range(10, 12):
+for i in range(20, 22):
     folder = f"batch_{i}"
     if not os.path.isdir(out / folder):
         os.mkdir(out / folder)
@@ -71,6 +71,8 @@ for i in range(10, 12):
                     - '{adaptive_score_offset}'
               imagePullSecrets:
                 - name: lsx-registry
+              nodeSelector:
+                gputype: rtx2080ti
               volumes:
                 - name: dataset-orig
                   cephfs:

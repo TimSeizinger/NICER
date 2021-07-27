@@ -12,7 +12,6 @@ from analysis_utils import evaluate_editing_recovery_pexels
 import sys
 sys.path[0] = "."
 
-torch.Tensor([10, 1]).cuda()
 start_time = time.time()
 
 #Convert args to their datatypes

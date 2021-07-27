@@ -64,8 +64,8 @@ for i in range(10):
     yaml_names = []
     optim_lrs = []
     gammas = []
-    score_pows = []
-    composite_balances = []
+    margins = []
+    alphas = []
     adaptive_score_offsets = []
 
     distances_distorted_can = pd.read_csv(Path('analysis/sets/hyperparameter/distances_distorted_can.csv'))
@@ -129,14 +129,14 @@ for i in range(10):
                 parameters = subfolder.split('_')
                 optim_lrs.append(parameters[0])
                 gammas.append(parameters[1])
-                score_pows.append(parameters[2])
-                composite_balances.append(parameters[3])
+                margins.append(parameters[2])
+                alphas.append(parameters[3])
                 adaptive_score_offsets.append(parameters[4])
             else:
                 optim_lrs.append(None)
                 gammas.append(None)
-                score_pows.append(None)
-                composite_balances.append(None)
+                margins.append(None)
+                alphas.append(None)
                 adaptive_score_offsets.append(None)
         '''
         elif maximum_checkpoint > 3000:
@@ -155,7 +155,7 @@ for i in range(10):
     '''
 
     results = {'yaml_name': yaml_names, 'mean_distance_to_orig': mean_distances,
-               'optim_lr': optim_lrs, 'gamma': gammas, 'score_pow': score_pows, 'composite_balance': composite_balances,
+               'optim_lr': optim_lrs, 'gamma': gammas, 'margin': margins, 'alpha': alphas,
                'adaptive_score_offset': adaptive_score_offsets}
 
     results_df = pd.DataFrame(results)

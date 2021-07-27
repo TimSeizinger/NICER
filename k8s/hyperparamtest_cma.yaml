@@ -18,9 +18,11 @@
                       value: "/tmp"
                   resources:
                     limits:
+                      nvidia.com/gpu: "1"
                       cpu: "48"
                       memory: "10Gi"
                     requests:
+                      nvidia.com/gpu: "1"
                       cpu: "48"
                       memory: "10Gi"
                   volumeMounts:

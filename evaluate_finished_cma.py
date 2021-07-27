@@ -159,6 +159,6 @@ for i in range(10):
                'adaptive_score_offset': adaptive_score_offsets}
 
     results_df = pd.DataFrame(results)
-    results_df.to_csv(out_dir / "mean_distances.csv")
+    results_df.to_csv(out_dir / "mean_distances_cma.csv")
     results_df.sort_values(by='mean_distance_to_orig', ascending=True, inplace=True)
-    results_df.to_csv(out_dir / "mean_distances_sorted.csv")
+    results_df.to_csv(out_dir / "mean_distances_sorted_cma.csv")
