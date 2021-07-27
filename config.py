@@ -21,7 +21,7 @@ automatic_epoch_target = 0.002
 
 save_animation = False                              # saves animation of the network editing
 save_animation_with_extra_info = False              # saves animation of the network editing with extra loss and score values
-save_composite_animation = False                    # saves animation of the network editing with animated graphs
+save_composite_animation = True                    # saves animation of the network editing with animated graphs
 save_loss_graph = False                             # saves loss graph
 save_score_graph = False                            # saves score graph
 animate_graphs = False                              # saves animated versions of graphs
@@ -49,7 +49,7 @@ composite_pow = 0.8557224253386464                # Score influence on balance b
 composite_balance = -0.7633380079031169            # Balance between MSE_SCORE_REG COMPOSITE and MSE_STYLE_CHANGES_HINGE_REG [-1,0, 1.0]
 
 # COMPOSITE_NEW loss
-composite_new_balance=0.5  #balance between ADAPTIVE_MSE_SCORE_REG and MSE_STYLE_CHANGES_HINGE (alpha)
+composite_new_balance=1.0  #balance between ADAPTIVE_MSE_SCORE_REG and MSE_STYLE_CHANGES_HINGE (alpha)
 
 adaptive_score_offset = 0.11746071023620273
 
