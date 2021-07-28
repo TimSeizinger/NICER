@@ -264,7 +264,7 @@ class Div2KSurvey:
         mode: str,
     ):
         self.mode = mode
-        self.image_dir = Path(f'datasets/div2ksurvey/{mode}')
+        self.image_dir = Path(f'datasets/div2k/{mode}')
         photos = os.listdir(self.image_dir)
         self.files = pd.DataFrame(data={'image_id': photos})
 
