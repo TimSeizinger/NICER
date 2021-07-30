@@ -101,24 +101,29 @@ for i in range(10):
 
         if maximum_checkpoint == 4999:
 
-            checkpoint_data = []
-            for checkpoint in checkpoints:
-                checkpoint_data.append(pd.read_csv(in_dir / subfolder / "data" / checkpoint))
+            if not os.path.isfile(out_dir / 'combined_data' / f"{yaml_name}.csv"):
+                checkpoint_data = []
+                for checkpoint in checkpoints:
+                    checkpoint_data.append(pd.read_csv(in_dir / subfolder / "data" / checkpoint))
 
-            combined_data = pd.concat(checkpoint_data, ignore_index=True)
-            combined_data.drop(columns='Unnamed: 0', inplace=True)
+                combined_data = pd.concat(checkpoint_data, ignore_index=True)
+                combined_data.drop(columns='Unnamed: 0', inplace=True)
 
-            combined_data = combined_data.filter(items=distances_distorted_can.index.values.tolist(), axis=0)
+                combined_data = combined_data.filter(items=distances_distorted_can.index.values.tolist(), axis=0)
 
-            if export_combined_data:
-                combined_data.to_csv(out_dir / 'combined_data' / f"{yaml_name}.csv")
+                if export_combined_data:
+                    combined_data.to_csv(out_dir / 'combined_data' / f"{yaml_name}.csv")
+            else:
+                combined_data = pd.read_csv(out_dir / 'combined_data' / f"{yaml_name}.csv")
 
             mean_distance = combined_data['distance_to_orig'].mean()
             std_deviation = combined_data['distance_to_orig'].std()
 
+            '''
             if 'best_distance_to_orig' in combined_data.keys():
                 mean_distance = combined_data['best_distance_to_orig'].mean()
                 std_deviation = combined_data['best_distance_to_orig'].std()
+            '''
 
             print(f"mean distances_to_orig of {yaml_name} is {mean_distance} with standard deviation: {std_deviation}")
 
