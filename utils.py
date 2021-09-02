@@ -213,6 +213,9 @@ def loss_with_filter_regularization(rating, target, loss_func, filters, gamma=co
     else:
         l2_term = sum([fil ** 2 for fil in filters])  # l2: sum the squares of all filters
 
+    #print(f"(loss) distance_term: {5 * distance_term}")
+    #print(f"(slider) l2_term: {gamma * l2_term}")
+
     return distance_term + gamma * l2_term
 
 

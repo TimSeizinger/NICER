@@ -13,11 +13,7 @@ os.chdir(os.path.dirname(os.getcwd()))
 results = {'image_id': [],
            'orig_nima_vgg16_score': [], 'orig_nima_mobilenetv2_score': [], 'orig_ia_fine_score': [], 'orig_ia_pre_score': [],
            'orig_ia_pre_styles_change': [],
-           #'orig_ia_pre_styles_1': [], 'orig_ia_pre_styles_2': [], 'orig_ia_pre_styles_3': [],
-           #'orig_ia_pre_styles_4': [], 'orig_ia_pre_styles_5': [], 'orig_ia_pre_styles_6': [],
            'dist_nima_vgg16_score': [], 'dist_nima_mobilenetv2_score': [], 'dist_ia_fine_score': [], 'dist_ia_pre_score': [],
-           #'dist_ia_pre_styles_1': [], 'dist_ia_pre_styles_2': [], 'dist_ia_pre_styles_3': [],
-           #'dist_ia_pre_styles_4': [], 'dist_ia_pre_styles_5': [], 'dist_ia_pre_styles_6': []
            'dist_ia_pre_styles_change': [], 'dist_filters': []
            }
 

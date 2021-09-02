@@ -514,7 +514,7 @@ class NICER(nn.Module):
 
     def enhance_image(self, image_path, re_init=True, fixFilters=None, epochs=config.epochs, thread_stopEvent=None,
                       headless_mode=False, img_orig=None, nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True,
-                      can_test = False, early_stop_test=False):
+                      can_test=False, early_stop_test=False):
         """
             optimization routine that is called to enhance an image.
             Usually this is called from the NICER button in the GUI.

@@ -1,8 +1,10 @@
 import pandas as pd
 import numpy as np
 import random
+import math
 
 from survey_objects import style_data
+from PIL import Image, ImageStat
 
 def combine_dataframes(df1 :pd.DataFrame, df2 :pd.DataFrame):
     combined = pd.concat([df1, df2])
@@ -104,3 +106,57 @@ def get_random_array(length):
     for i in range(length):
         random_list.append(random.randint(0, 1))
     return random_list
+
+def get_brightness(im_path, read=True):
+    if read:
+        im_file = Image.open(im_path)
+    else:
+        im_file = im_path  # passed "path" already is PIL image
+    stat = ImageStat.Stat(im_file)
+    try:
+        r, g, b = stat.mean  # RGB
+        res = math.sqrt(0.241 * (r ** 2) + 0.691 * (g ** 2) + 0.068 * (b ** 2))
+    except ValueError:
+        mean = stat.mean  # grayscale
+        res = math.sqrt(mean[0])
+    return res
+
+def check_if_unambiguous(survey_result, candidate, styles, i, best):
+    for style in styles:
+        if style == candidate:
+            continue
+        if survey_result.at[i, f'{style}_rating'] == best:
+            return False
+    return True
+
+def count_best(survey_result, styles_to_evaluate, visualization):
+    # initialize counter
+    best_styles = {}
+    examples = {}
+
+    for style in styles_to_evaluate:
+        best_styles[style] = 0
+        examples[style] = set()
+    even_correction = 0
+
+    for i in range(survey_result.shape[0]):
+        best = 0
+        even_flag = False
+        # Get best rating for each image
+        for style in styles_to_evaluate:
+            best = max(best, survey_result.at[i, f'{style}_rating'])
+        # Find out to which style it belongs
+        for style in styles_to_evaluate:
+            if survey_result.at[i, f'{style}_rating'] == best:
+                if check_if_unambiguous(survey_result, style, styles_to_evaluate, i, best):
+                    best_styles[style] += 1
+                    examples[style].add(i)
+                else:
+                    even_flag = True
+        if even_flag:
+            even_correction += 1
+
+    if visualization:
+        return best_styles, examples
+    else:
+        return best_styles

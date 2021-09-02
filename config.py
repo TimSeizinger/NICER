@@ -21,37 +21,37 @@ automatic_epoch_target = 0.002
 
 save_animation = False                              # saves animation of the network editing
 save_animation_with_extra_info = False              # saves animation of the network editing with extra loss and score values
-save_composite_animation = True                    # saves animation of the network editing with animated graphs
+save_composite_animation = True                     # saves animation of the network editing with animated graphs
 save_loss_graph = False                             # saves loss graph
 save_score_graph = False                            # saves score graph
 animate_graphs = False                              # saves animated versions of graphs
 
-choose_save_name_and_folder = False                # able to specify image output folder and name
+choose_save_name_and_folder = True                  # able to specify image output folder and name, otherwise saves to out folder by default
 
 debug_image_pipeline = False
 padding = True
 
 
-gamma = 0.1
+gamma = 0.1                                         # filter regularization strength (gamma in hyperparameter search and thesis)
 epochs = 50
-optim = 'sgd'                                      # also supports sgd, adam, cma and nevergrad(meta)
+optim = 'sgd'                                      # also supports sgd, adam, cma and nevergrad
 
-optim_lr = 0.038889817045900416
+optim_lr = 0.038889817045900416                     #Learning rate of optimizer (eta in thesis)
 optim_momentum = 0.9
 
-cma_sigma = 5
+cma_sigma = 5                                       #Sigma parameters of CMA-ES (eta in thesis)
 cma_population = 10
 
-hinge_val = 0.05  # value for hinge loss margin
+hinge_val = 0.05  # value for hinge loss margin (margin in hyperparameter search, mu in thesis)
 
 # COMPOSITE loss parameters
 composite_pow = 0.8557224253386464                # Score influence on balance between MSE_SCORE_REG and MSE_STYLE_CHANGES_HINGE_REG
 composite_balance = -0.7633380079031169            # Balance between MSE_SCORE_REG COMPOSITE and MSE_STYLE_CHANGES_HINGE_REG [-1,0, 1.0]
 
 # COMPOSITE_NEW loss
-composite_new_balance=1.0  #balance between ADAPTIVE_MSE_SCORE_REG and MSE_STYLE_CHANGES_HINGE (alpha)
+composite_new_balance=1.0  #balance between ADAPTIVE_MSE_SCORE_REG and MSE_STYLE_CHANGES_HINGE (alpha during hyperparameter search, beta in thesis)
 
-adaptive_score_offset = 0.11746071023620273
+adaptive_score_offset = 0.12 #offset of score target (delta in thesis)
 
 # ----- image parameters:
 

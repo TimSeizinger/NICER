@@ -104,12 +104,9 @@ def evaluate_image(image: Image, nicer, results, nima_vgg16=True, nima_mobilenet
             weighted_mean(ia_fine_distr_of_ratings, nicer.weights, nicer.length).item() * 10)
 
 
-def evaluate_rating_pexels(nicer, output_file, mode, limit=None):
-    results = {'image_id': [],
-               'orig_nima_vgg16_score': [], 'orig_nima_mobilenetv2_score': [], 'orig_ia_fine_score': [],
-               'orig_ia_pre_score': [],
-               'orig_ia_pre_styles_change': [], 'orig_ia_pre_styles_change_strength': [],
-               }
+def evaluate_rating_pexels(nicer, output_file, mode, limit=None,
+                           nima_vgg16=True, nima_mobilenetv2=True, ssmtpiaa=True, ssmtpiaa_fine=True):
+    results = get_results_dict(['orig'], nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine)
 
     pexels = Pexels(mode=mode)
 
@@ -122,7 +119,7 @@ def evaluate_rating_pexels(nicer, output_file, mode, limit=None):
         print('processing ' + str(item['image_id']) + ' in iteration ' + str(i))
         results['image_id'].append(item['image_id'])
 
-        evaluate_image(item['img'], nicer, results, prefix='orig')
+        evaluate_image(item['img'], nicer, results, nima_vgg16, nima_mobilenetv2, ssmtpiaa, ssmtpiaa_fine, prefix='orig')
 
     write_dict_to_file(results, output_file)
 
